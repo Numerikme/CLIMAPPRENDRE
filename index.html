@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La clim, comment ça marche — schéma interactif</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><strong>La clim, comment ça marche</strong><span>Schéma interactif de formation</span></div>
+  <div class="modes" role="group" aria-label="Mode de fonctionnement">
+    <button data-mode="cool" class="on"><b>Froid</b><small>été · 35 °C dehors</small></button>
+    <button data-mode="heat"><b>Chaud</b><small>hiver · −2 °C dehors</small></button>
+  </div>
+  <div class="tools">
+    <button id="bX" class="tg" title="Voir à l'intérieur des appareils">Rayon X</button>
+    <button id="bL" class="tg" title="Afficher le nom des éléments">Étiquettes</button>
+    <button id="bT">Visite guidée</button>
+    <button id="bQ">Quiz</button>
+    <button id="bF" title="Masquer les panneaux pour projeter">Plein écran</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="left">
+    <section>
+      <h2>Système</h2>
+      <div class="seg col" data-set="sys">
+        <button data-val="mono" class="on">Mono-split<small>1 groupe, 1 unité intérieure</small></button>
+        <button data-val="multi">Multi-split<small>1 groupe, plusieurs unités, 1 liaison chacune</small></button>
+        <button data-val="vrf">VRF / DRV<small>1 réseau commun pour tout un bâtiment</small></button>
+      </div>
+    </section>
+    <section>
+      <h2>Unité intérieure</h2>
+      <div class="pick" id="selWrap" hidden><label for="sel">Appliquer à</label><select id="sel"></select></div>
+      <div class="seg grid" data-set="type">
+        <button data-val="mural" class="on">Mural</button>
+        <button data-val="cassette">Cassette</button>
+        <button data-val="plafonnier">Plafonnier</button>
+        <button data-val="console">Console</button>
+        <button data-val="gainable" class="wide">Gainable</button>
+      </div>
+    </section>
+    <section id="secGain" hidden>
+      <h2>Réseau de gaines</h2>
+      <div class="seg" data-set="diff">
+        <button data-val="rond" class="on">Bouches rondes</button>
+        <button data-val="grille">Grilles</button>
+      </div>
+      <div class="seg" data-set="zoning" id="segZone">
+        <button data-val="1" class="on">Zoning</button>
+        <button data-val="0">Sans zoning</button>
+      </div>
+      <p class="hint" id="zoneHint">Cliquez sur un thermostat pour fermer ou ouvrir sa zone.</p>
+    </section>
+    <section>
+      <h2>Support du groupe</h2>
+      <div class="seg" data-set="support">
+        <button data-val="mural" class="on">Mural</button>
+        <button data-val="sol">Au sol</button>
+      </div>
+    </section>
+    <section>
+      <h2>Condensats</h2>
+      <div class="seg col" data-set="drain">
+        <button data-val="gravite" class="on">Écoulement par gravité</button>
+        <button data-val="goulotte">Pompe de relevage en goulotte</button>
+        <button data-val="integree">Pompe de relevage intégrée</button>
+      </div>
+    </section>
+    <section>
+      <h2>Alimentation</h2>
+      <div class="seg" data-set="power">
+        <button data-val="1" class="on">En marche</button>
+        <button data-val="0">Disjoncté</button>
+      </div>
+    </section>
+  </aside>
+
+  <section class="stage">
+    <svg id="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Coupe d'un bâtiment équipé d'une climatisation"></svg>
+    <div class="legend" id="legend">
+      <span><i style="background:var(--hpg)"></i>Gaz chaud, haute pression</span>
+      <span><i style="background:var(--hpl)"></i>Liquide tiède, haute pression</span>
+      <span><i style="background:var(--bpm)"></i>Liquide froid, basse pression</span>
+      <span><i style="background:var(--bpg)"></i>Gaz frais, basse pression</span>
+    </div>
+    <div class="status" id="status" hidden></div>
+    <div class="dock" id="dock" hidden>
+      <div class="dock-step" id="dockStep"></div>
+      <div class="dock-body">
+        <h3 id="dockTitle"></h3>
+        <p id="dockText"></p>
+        <div class="dock-answers" id="dockAns"></div>
+      </div>
+      <div class="dock-nav">
+        <button id="dockPrev">Précédent</button>
+        <button id="dockNext" class="primary">Suivant</button>
+        <button id="dockClose" title="Fermer">Fermer</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="right">
+    <nav class="tabs">
+      <button data-tab="info" class="on">Comprendre</button>
+      <button data-tab="dim">Dimensionner</button>
+      <button data-tab="pannes">Pannes</button>
+    </nav>
+    <div class="tab" id="tab-info"></div>
+    <div class="tab" id="tab-dim" hidden></div>
+    <div class="tab" id="tab-pannes" hidden></div>
+  </aside>
+</div>
+
+<script src="scene.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>
