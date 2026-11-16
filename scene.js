@@ -3,8 +3,6 @@
 'use strict';
 const NS = 'http://www.w3.org/2000/svg';
 const svg = document.getElementById('scene');
-// 4 calques superposés : 0 ciel, 1 bâtiment (immobile), 2 appareils + flux (animés), 3 étiquettes
-const SV = [...svg.querySelectorAll('svg')];
 const G = 810, BX = 520, IX0 = 542, IX1 = 1538, RX0 = 456, MX = 440;
 
 const S = {
@@ -54,7 +52,7 @@ function streaks(d, cls, w, parent, noHalo) {
   const probe = el('path', { d }, parent), L = probe.getTotalLength(); probe.remove();
   const kind = cls.split(' ')[0], seg = kind === 'ret' ? 16 : 30;
   const dur = Math.max(900, (L + seg) / (SPEED[kind] || 95) * 1000);
-  const n = Math.max(2, Math.round(L / (kind === 'ret' ? 80 : 110)));
+  const n = Math.max(2, Math.round(L / (kind === 'ret' ? 60 : 85)));
   let last;
   for (let i = 0; i < n; i++) {
     last = el('path', { d, class: 'air streak ' + cls, 'stroke-width': w, style: `stroke-dasharray:${seg} ${L + seg}` }, parent);
@@ -104,7 +102,7 @@ const unitCount = () => S.sys === 'mono' ? 1 : S.sys === 'multi' ? 3 : 6;
 
 /* ---------- Extérieur ---------- */
 function drawOutside(g) {
-  const d = el('defs', {}, SV[0]);
+  const d = el('defs', {}, svg);
   const mk = (id, a, b) => { const lg = el('linearGradient', { id, x1: 0, y1: 0, x2: 0, y2: 1 }, d); el('stop', { offset: 0, 'stop-color': a }, lg); el('stop', { offset: 1, 'stop-color': b }, lg); };
   mk('skyS', '#9fd3f2', '#e6f4fb'); mk('skyW', '#b9c4ce', '#eceff2');
   R(0, 0, 1600, 900, { fill: 'url(#skyW)' }, g);
@@ -588,18 +586,17 @@ function spot(id) {
 
 /* ---------- Construction ---------- */
 function build() {
-  SV.forEach(v => v.innerHTML = ''); hot = {}; labs = []; gid = 0;
+  svg.innerHTML = ''; hot = {}; labs = []; gid = 0;
   const n = unitCount();
   while (S.types.length < n) S.types.push(S.types[0]);
   S.types.length = n;
   L = layout();
   layers = {};
-  const bg = el('g', {}, SV[0]);
+  const bg = el('g', {}, svg);
   drawOutside(bg);
-  layers.defs = el('defs', {}, SV[1]);
+  layers.defs = el('defs', {}, svg);
   defs();
-  const LY = { build: 1, tint: 1, furn: 1, pipes: 2, insul: 2, out: 2, units: 2, gou: 2, air: 2, over: 3, anno: 3, labels: 3, spot: 3 };
-  Object.keys(LY).forEach(k => layers[k] = el('g', {}, SV[LY[k]]));
+  ['build', 'tint', 'furn', 'pipes', 'insul', 'out', 'units', 'gou', 'air', 'over', 'anno', 'labels', 'spot'].forEach(k => layers[k] = el('g', {}, svg));
   units = S.types.map((type, k) => ({ type, room: rooms[k] }));
   drawBuilding(layers.build);
   drawDoors(layers.build);
@@ -617,7 +614,7 @@ function build() {
 }
 function refresh() {
   const cyc = S.def === 'defrost' ? 'cool' : S.mode;
-  svg.setAttribute('class', ['scn', cyc, S.mode === 'cool' ? 'summer' : 'winter', S.power ? '' : 'off', S.xray ? 'xray' : '', S.labels ? 'lab' : '',
+  svg.setAttribute('class', [cyc, S.mode === 'cool' ? 'summer' : 'winter', S.power ? '' : 'off', S.xray ? 'xray' : '', S.labels ? 'lab' : '',
     S.fault ? 'fault-' + S.fault : '', S.def === 'frost' ? 'frosting' : S.def === 'defrost' ? 'frosting defrosting' : '', spotId && hot[spotId] ? 'spoton' : '', S.quizfind ? 'quizfind' : ''].join(' '));
   const cool = S.mode === 'cool', q = id => document.getElementById(id);
   if (q('tOut')) q('tOut').textContent = cool ? '35 °C' : '−2 °C';
@@ -628,10 +625,8 @@ function refresh() {
 function paintTemps() {
   rooms.forEach((r, i) => {
     const T = temps[i], t = document.getElementById('t' + i), ti = document.getElementById('tint' + i);
-    const txt = T.toFixed(1).replace('.', ',') + ' °C';
-    if (t && t.textContent !== txt) t.textContent = txt;
-    const f = T > 25 ? `rgba(240,120,40,${Math.min(0.24, (T - 25) / 4.5 * 0.24).toFixed(2)})` : T < 20 ? `rgba(60,130,230,${Math.min(0.24, (20 - T) / 4.5 * 0.24).toFixed(2)})` : 'rgba(0,0,0,0)';
-    if (ti && ti.getAttribute('fill') !== f) ti.setAttribute('fill', f);
+    if (t) t.textContent = T.toFixed(1).replace('.', ',') + ' °C';
+    if (ti) ti.setAttribute('fill', T > 25 ? `rgba(240,120,40,${Math.min(0.24, (T - 25) / 4.5 * 0.24).toFixed(3)})` : T < 20 ? `rgba(60,130,230,${Math.min(0.24, (20 - T) / 4.5 * 0.24).toFixed(3)})` : 'rgba(0,0,0,0)');
   });
 }
 function tick() {

@@ -51,9 +51,7 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:6
 /* Scène */
 .stage{flex:1;position:relative;min-width:0;background:linear-gradient(#9fd3f2 50%,#8dbb62 50%);transition:background 1.4s}
 body.heat .stage{background:linear-gradient(#b9c4ce 50%,#eef2f5 50%)}
-#scene{width:100%;height:100%;display:block;position:relative;user-select:none;contain:strict}
-#scene>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;will-change:transform}
-#scene>svg>*{pointer-events:visiblePainted}
+#scene{width:100%;height:100%;display:block;user-select:none}
 .stage.docked #scene{height:calc(100% - 140px)}
 .legend{position:absolute;left:14px;bottom:12px;display:flex;flex-direction:column;gap:4px;background:rgba(251,248,242,.94);border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:13px;opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s;pointer-events:none}
 .legend.show{opacity:1;transform:none}
@@ -132,7 +130,6 @@ body.heat .stage{background:linear-gradient(#b9c4ce 50%,#eef2f5 50%)}
 @keyframes drift{to{transform:translateX(90px)}}
 .rays{animation:spin 60s linear infinite;transform-box:fill-box;transform-origin:center}
 .flake{animation:fall linear infinite}
-.summer .flake,.winter .rays,.summer .cloud.w,.winter .cloud{animation-play-state:paused}
 @keyframes fall{from{transform:translateY(-40px)}to{transform:translateY(860px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .rname{font-size:15px;fill:#7b7265;font-weight:600}
@@ -211,18 +208,15 @@ stop{transition:stop-color 1.2s ease}
 .frost{opacity:0;transition:opacity 3s ease;pointer-events:none}
 .frosting .frost{opacity:1}
 .defrosting .frost{opacity:0;transition-duration:4s}
-.steam{animation-play-state:paused!important;opacity:0;fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;stroke-dasharray:14 18;animation:af2 1.4s linear infinite reverse;transition:opacity .8s}
-.defrosting .steam{opacity:.9;animation-play-state:running!important}
+.steam{opacity:0;fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;stroke-dasharray:14 18;animation:af2 1.4s linear infinite reverse;transition:opacity .8s}
+.defrosting .steam{opacity:.9}
 .defrosting .air{opacity:0!important}
 .defrosting .blades,.defrosting .topfan{animation-play-state:paused}
 .defrosting .mdrip{opacity:1}
-.mdrip{opacity:0;animation:dripf 1s ease-in infinite;animation-play-state:paused}
-.defrosting .mdrip{animation-play-state:running}
+.mdrip{opacity:0;animation:dripf 1s ease-in infinite}
 
 /* Pannes */
 .fonly{display:none}
-.fonly,.fonly *{animation-play-state:paused}
-.fault-filtre .f-filtre *,.fault-fluide .f-fluide *,.fault-pente .f-pente *,.fault-obstrue .f-obstrue *{animation-play-state:running}
 .fault-filtre .f-filtre,.fault-fluide .f-fluide,.fault-pente .f-pente,.fault-obstrue .f-obstrue{display:block}
 .fault-filtre .sup,.fault-filtre .ret{opacity:.2;animation-duration:2.6s}
 .fault-fluide .tb-flow{opacity:.22;animation-duration:1.9s}
@@ -235,8 +229,7 @@ stop{transition:stop-color 1.2s ease}
 
 /* Interaction */
 [data-info],[data-zone]{cursor:pointer}
-[data-info]{transition:opacity .15s}
-[data-info]:hover{opacity:.78}
+[data-info]:hover{filter:drop-shadow(0 0 4px rgba(28,111,209,.75))}
 .lab .anno{display:none}
 .lab-g{display:none}
 .lab .lab-g{display:block}
@@ -248,7 +241,6 @@ stop{transition:stop-color 1.2s ease}
 .lab-g text{font-size:15px;font-weight:600;fill:#1d2831}
 .quizfind .lab-g{display:none!important}
 .spot{opacity:0;transition:opacity .5s;pointer-events:none}
-.ring{animation-play-state:paused}.spoton .ring{animation-play-state:running}
 .spoton .spot{opacity:1}
 .ring{fill:none;stroke:#fff;stroke-width:3;animation:ringp 1.6s ease-in-out infinite}
 @keyframes ringp{50%{stroke-width:7;stroke-opacity:.55}}
@@ -256,7 +248,7 @@ stop{transition:stop-color 1.2s ease}
 .thermo text{font-size:17px;font-weight:700;text-anchor:middle;fill:#1d2831;font-variant-numeric:tabular-nums}
 .thermo.closed rect{fill:#d9d6cf}
 .thermo.closed text{fill:#8b8f93}
-.tint{pointer-events:none;transition:fill .6s linear}
+.tint{pointer-events:none;transition:fill 1s linear}
 
 @media (max-width:1280px){
   .left{width:206px}.right{width:300px}
