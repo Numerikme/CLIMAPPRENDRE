@@ -49,9 +49,9 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:6
 .hint{font-size:12.5px;color:var(--mute);margin:4px 0 0}
 
 /* Scène */
-.stage{flex:1;position:relative;min-width:0;background:linear-gradient(#9fd3f2 50%,#8dbb62 50%);transition:background 1.4s}
+.stage{flex:1;position:relative;min-width:0;overflow:hidden;background:linear-gradient(#9fd3f2 50%,#8dbb62 50%);transition:background 1.4s}
 body.heat .stage{background:linear-gradient(#b9c4ce 50%,#eef2f5 50%)}
-#scene{width:100%;height:100%;display:block;user-select:none}
+#scene{width:100%;height:100%;display:block;user-select:none;overflow:visible}
 .stage.docked #scene{height:calc(100% - 140px)}
 .legend{position:absolute;left:14px;bottom:12px;display:flex;flex-direction:column;gap:4px;background:rgba(251,248,242,.94);border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:13px;opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s;pointer-events:none}
 .legend.show{opacity:1;transform:none}

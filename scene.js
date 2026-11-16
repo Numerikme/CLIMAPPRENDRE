@@ -83,10 +83,10 @@ const unitCount = () => S.sys === 'mono' ? 1 : S.sys === 'multi' ? 3 : 6;
 /* ---------- Extérieur ---------- */
 function drawOutside(g) {
   const d = el('defs', {}, svg);
-  const mk = (id, a, b) => { const lg = el('linearGradient', { id, x1: 0, y1: 0, x2: 0, y2: 1 }, d); el('stop', { offset: 0, 'stop-color': a }, lg); el('stop', { offset: 1, 'stop-color': b }, lg); };
+  const mk = (id, a, b) => { const lg = el('linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1: 0, y1: 0, x2: 0, y2: 900 }, d); el('stop', { offset: 0, 'stop-color': a }, lg); el('stop', { offset: 1, 'stop-color': b }, lg); };
   mk('skyS', '#9fd3f2', '#e6f4fb'); mk('skyW', '#b9c4ce', '#eceff2');
-  R(0, 0, 1600, 900, { fill: 'url(#skyW)' }, g);
-  R(0, 0, 1600, 900, { fill: 'url(#skyS)', class: 's-only' }, g);
+  R(-3000, -2000, 7600, 2000 + G, { fill: 'url(#skyW)' }, g);
+  R(-3000, -2000, 7600, 2000 + G, { fill: 'url(#skyS)', class: 's-only' }, g);
   // soleil
   const sun = el('g', { class: 's-only' }, g);
   const rays = el('g', { class: 'rays' }, sun);
@@ -103,10 +103,10 @@ function drawOutside(g) {
   // nuages d'été et collines
   const cl = el('g', { class: 's-only' }, g);
   [[120, 190, 0.9, 70], [1250, 120, 1.2, 95], [760, 70, 0.8, 120]].forEach(([x, y, k, t]) => { const c = el('g', { class: 'cloud', style: `animation-duration:${t}s` }, cl); [[0, 0, 70, 22], [40, -16, 46, 24], [-34, -8, 36, 18]].forEach(([a, b, rx, ry]) => el('ellipse', { cx: x + a * k, cy: y + b * k, rx: rx * k, ry: ry * k, fill: '#fff', opacity: 0.9 }, c)); });
-  el('path', { d: `M0 ${G} L0 760 Q130 700 290 752 Q420 790 520 770 L520 ${G} Z M1560 ${G} L1560 772 Q1590 756 1600 760 L1600 ${G} Z`, class: 'hill', fill: '#a9cf86' }, g);
+  el('path', { d: `M-3000 ${G} L-3000 760 L0 760 Q130 700 290 752 Q420 790 520 770 L520 ${G} Z M1560 ${G} L1560 772 Q1590 756 1600 760 L4600 760 L4600 ${G} Z`, class: 'hill', fill: '#a9cf86' }, g);
   // sol
-  R(0, G, 1600, 90, { class: 'grass', fill: '#8dbb62' }, g);
-  R(0, G, 1600, 7, { fill: 'rgba(40,60,20,.16)' }, g);
+  R(-3000, G, 7600, 2000, { class: 'grass', fill: '#8dbb62' }, g);
+  R(-3000, G, 7600, 7, { fill: 'rgba(40,60,20,.16)' }, g);
   // arbre
   R(46, 640, 14, G - 640, { fill: '#7a5a3e' }, g);
   const leaf = el('g', { class: 's-only' }, g);
