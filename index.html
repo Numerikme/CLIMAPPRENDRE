@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>La clim, comment ça marche — schéma interactif</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 <header class="top">
@@ -88,14 +88,17 @@
       <span><i style="background:var(--bpg)"></i>Gaz frais, basse pression</span>
     </div>
     <div class="status" id="status" hidden></div>
+    <div class="qover" id="qover" hidden></div>
     <div class="dock" id="dock" hidden>
       <div class="dock-step" id="dockStep"></div>
       <div class="dock-body">
+        <div class="hud" id="dockHud" hidden></div>
         <h3 id="dockTitle"></h3>
         <p id="dockText"></p>
         <div class="dock-answers" id="dockAns"></div>
       </div>
       <div class="dock-nav">
+        <button id="dockHelp" hidden>Coup de pouce</button>
         <button id="dockPrev">Précédent</button>
         <button id="dockNext" class="primary">Suivant</button>
         <button id="dockClose" title="Fermer">Fermer</button>
@@ -115,7 +118,7 @@
   </aside>
 </div>
 
-<script src="scene.js"></script>
-<script src="ui.js"></script>
+<script src="scene.js?v=2"></script>
+<script src="ui.js?v=2"></script>
 </body>
 </html>

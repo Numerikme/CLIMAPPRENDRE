@@ -231,64 +231,242 @@ function tourGo(i) {
   if (s[3].xray != null) S.xray = s[3].xray;
   S.power = true; C.refresh(); sync();
   $('#dockStep').textContent = (i + 1) + ' / ' + TOUR.length; $('#dockTitle').textContent = s[1]; $('#dockText').textContent = s[2];
-  $('#dockAns').innerHTML = ''; $('#dockPrev').hidden = false; $('#dockPrev').disabled = i === 0;
+  $('#dockAns').innerHTML = ''; $('#dockPrev').hidden = false; $('#dockPrev').disabled = i === 0; $('#dockHelp').hidden = true; $('#dockHud').hidden = true;
   $('#dockNext').textContent = i === TOUR.length - 1 ? 'Terminer' : 'Suivant';
   C.spot(s[0]);
 }
-function closeDock() { ti = -1; quiz.on = false; quiz.find = null; S.quizfind = false; C.spot(null); C.refresh(); dock(false); }
+function closeDock() { ti = -1; quiz.on = false; quiz.find = null; S.quizfind = false; C.spot(null); C.refresh(); dock(false); endQuiz(); }
 const stopDef = () => { S.def = null; clearTimeout(defT); status(''); };
-$('#bT').onclick = () => { stopDef(); quiz.on = false; dock(true); tourGo(0); };
+$('#bT').onclick = () => { stopDef(); endQuiz(); dock(true); tourGo(0); };
 $('#dockClose').onclick = closeDock;
 $('#dockPrev').onclick = () => { if (!quiz.on && ti > 0) tourGo(ti - 1); };
 $('#dockNext').onclick = () => { if (quiz.on) return quizNext(); if (ti < TOUR.length - 1) tourGo(ti + 1); else closeDock(); };
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('#qover').hidden) return closeDock();
   if ($('#dock').hidden || /INPUT|SELECT/.test(e.target.tagName)) return;
   if (e.key === 'ArrowRight') $('#dockNext').click(); if (e.key === 'ArrowLeft') $('#dockPrev').click(); if (e.key === 'Escape') closeDock();
 });
 
-/* ---------- Quiz ---------- */
-const QUIZ = [
-  { q: 'En mode froid, que fait une climatisation ?', a: ['Elle fabrique du froid', 'Elle déplace la chaleur de la pièce vers l’extérieur', 'Elle fait entrer l’air frais du dehors'], ok: 1, why: 'Elle transporte la chaleur. L’air de la pièce reste le même, il est simplement refroidi.' },
-  { q: 'Montrez le compresseur sur le schéma.', find: 'compresseur', why: 'Il se trouve dans le groupe extérieur. C’est lui qui met le fluide en mouvement.' },
-  { q: 'Quel organe permet de passer du froid au chaud ?', a: ['Le détendeur', 'Le disjoncteur', 'La vanne 4 voies'], ok: 2, why: 'La vanne 4 voies inverse le sens de circulation du fluide.' },
-  { q: 'En mode chaud, que fait le groupe extérieur ?', a: ['Il capte la chaleur de l’air extérieur', 'Il rejette de la chaleur dehors', 'Il est à l’arrêt'], ok: 0, why: 'Même par temps froid, l’air extérieur contient de la chaleur que le fluide peut capter.' },
-  { q: 'Dans un multi-split, comment sont raccordées les unités intérieures ?', a: ['Un réseau commun avec des refnets', 'Chacune a sa propre liaison jusqu’au groupe', 'Chacune a son propre groupe extérieur'], ok: 1, why: 'Une liaison par unité. Le réseau commun avec refnets, c’est le VRF.' },
-  { q: 'Montrez le disjoncteur qui protège la clim.', find: 'disj', why: 'Dans le tableau électrique, un disjoncteur est réservé à la climatisation.' },
-  { q: 'Une pièce de 20 m² sous 2,5 m de plafond. Avec 40 W/m³, quelle puissance ?', a: ['0,8 kW', '2 kW', '5 kW'], ok: 1, why: '20 × 2,5 = 50 m³, et 50 × 40 = 2 000 W.' },
-  { q: 'Un brassage de 5 volumes par heure dans 50 m³, c’est quel débit d’air ?', a: ['10 m³/h', '250 m³/h', '2 500 m³/h'], ok: 1, why: '50 m³ × 5 = 250 m³/h.' },
-  { q: 'À quoi sert une pompe de relevage ?', a: ['À faire circuler le fluide frigorigène', 'À évacuer l’eau quand elle ne peut pas s’écouler par gravité', 'À augmenter la puissance'], ok: 1, why: 'Elle remonte l’eau de condensation quand une pente naturelle est impossible.' },
-  { q: 'Un filtre encrassé, qu’est-ce que ça change ?', a: ['Rien, c’est esthétique', 'Moins d’air passe : moins de puissance, plus de consommation', 'La clim souffle plus fort'], ok: 1, why: 'Moins d’air sur l’échangeur, c’est moins de chaleur échangée.' }
+/* ---------- Quiz : le défi clim, par niveaux ---------- */
+// k : qcm (choix), vf (vrai/faux), find (cliquer sur le schéma), ordre (remettre dans l’ordre)
+// set : réglage du schéma pour la question ; hint : coup de pouce ; why : explication
+const LEVELS = [
+  { t: 'Les bases', d: 'Comment une clim déplace la chaleur', q: [
+    { k: 'qcm', q: 'En mode froid, que fait une climatisation ?', a: ['Elle fabrique du froid', 'Elle déplace la chaleur de la pièce vers l’extérieur', 'Elle fait entrer l’air frais du dehors'], ok: 1, hint: 'Regardez la couleur de l’air qui sort du groupe extérieur.', why: 'Elle transporte la chaleur. L’air de la pièce reste le même, il est simplement refroidi.' },
+    { k: 'vf', q: 'En été, le groupe extérieur souffle de l’air chaud.', ok: true, set: { mode: 'cool' }, hint: 'Ce qu’on enlève de la pièce doit bien aller quelque part.', why: 'Vrai : il rejette dehors la chaleur retirée de la pièce.' },
+    { k: 'qcm', q: 'Qu’est-ce qui transporte la chaleur entre l’intérieur et l’extérieur ?', a: ['L’air de la pièce', 'L’eau des condensats', 'Un fluide qui circule dans des tubes en cuivre'], ok: 2, set: { xray: true }, hint: 'Le Rayon X est allumé : regardez ce qui circule dans les tubes.', why: 'Le fluide frigorigène fait la navette en circuit fermé dans les liaisons en cuivre.' },
+    { k: 'vf', q: 'Une clim réversible peut aussi chauffer en hiver.', ok: true, set: { mode: 'heat' }, hint: 'Regardez le bouton en haut de l’écran : Froid / Chaud.', why: 'Vrai : on inverse le sens du fluide, et la chaleur est captée dehors pour être apportée dedans.' },
+    { k: 'qcm', q: 'En hiver, où le groupe extérieur trouve-t-il la chaleur ?', a: ['Dans l’air extérieur, même s’il fait froid', 'Dans une résistance électrique', 'Dans le sol du jardin'], ok: 0, set: { mode: 'heat' }, hint: 'Le ventilateur du groupe continue de tourner : il fait passer quelque chose dans l’échangeur.', why: 'Même à −2 °C, l’air contient de la chaleur. Le fluide, encore plus froid, sait la capter.' },
+    { k: 'vf', q: 'Le fluide frigorigène s’use et doit être rechargé tous les ans.', ok: false, hint: 'Le circuit est fermé, comme un circuit de chauffage central.', why: 'Faux : le fluide tourne en circuit fermé. S’il en manque, c’est qu’il y a une fuite.' },
+    { k: 'ordre', q: 'Remettez dans l’ordre le trajet de la chaleur en été.', a: ['La chaleur de la pièce entre dans l’unité intérieure', 'Le fluide l’emporte dans les tubes', 'Le compresseur la concentre', 'Le groupe extérieur la rejette dehors'], set: { xray: true }, hint: 'On part de la pièce et on finit dehors.', why: 'Pièce → fluide → compresseur → dehors : c’est tout le principe de la clim.' }
+  ] },
+  { t: 'Le matériel', d: 'Reconnaître chaque élément sur le schéma', q: [
+    { k: 'find', q: 'Montrez le groupe extérieur.', find: 'groupe', hint: 'Il est dehors, fixé contre le mur.', why: 'Le groupe extérieur contient le compresseur, un échangeur et un ventilateur.' },
+    { k: 'find', q: 'Montrez l’unité intérieure.', find: 'u-', hint: 'Elle est dans la pièce, en haut du mur.', why: 'C’est elle qui souffle l’air traité dans la pièce.' },
+    { k: 'find', q: 'Montrez le disjoncteur dédié à la clim.', find: 'disj', hint: 'Cherchez le tableau électrique de la maison.', why: 'Un disjoncteur dans le tableau protège uniquement la climatisation.' },
+    { k: 'find', q: 'Montrez le ventilateur du groupe extérieur.', find: 'ventilo', hint: 'Une grande hélice derrière la grille du groupe.', why: 'Il force l’air à traverser l’échangeur. Sans air, pas d’échange de chaleur.' },
+    { k: 'find', q: 'Montrez les liaisons frigorifiques.', find: 'liaison', set: { xray: true }, hint: 'Deux tubes en cuivre qui relient le groupe à l’unité intérieure.', why: 'Un petit tube pour le liquide, un gros pour le gaz.' },
+    { k: 'find', q: 'Montrez le compresseur.', find: 'compresseur', set: { xray: true }, hint: 'Dans le groupe extérieur, une grosse bouteille.', why: 'Le cœur du système : il comprime le gaz et le fait circuler.' },
+    { k: 'find', q: 'Montrez la vanne 4 voies.', find: 'v4v', set: { xray: true }, hint: 'Un petit aiguillage collé au compresseur.', why: 'C’est elle qui inverse le sens du fluide pour passer du froid au chaud.' }
+  ] },
+  { t: 'La pose', d: 'Électricité, condensats, supports', q: [
+    { k: 'vf', q: 'On peut brancher la clim sur une prise partagée avec d’autres appareils.', ok: false, hint: 'Regardez ce qui part du tableau électrique.', why: 'Faux : la clim a sa propre ligne et son propre disjoncteur.' },
+    { k: 'qcm', q: 'Que cache la goulotte le long du mur ?', a: ['Les liaisons frigo, le câble et l’évacuation des condensats', 'Uniquement le câble électrique', 'L’air soufflé vers la pièce'], ok: 0, set: { xray: true, drain: 'goulotte' }, hint: 'Le Rayon X rend la goulotte transparente.', why: 'Tout passe dans la goulotte : liaisons, câble d’interconnexion et condensats.' },
+    { k: 'qcm', q: 'Les condensats, c’est…', a: ['De l’eau venant de l’humidité de l’air', 'Une fuite de fluide frigorigène', 'De l’huile du compresseur'], ok: 0, hint: 'Pensez à la buée sur un verre sorti du frigo.', why: 'L’air qui refroidit dépose son humidité sur l’échangeur froid.' },
+    { k: 'qcm', q: 'Pourquoi le tuyau de condensats doit-il toujours descendre ?', a: ['Pour que l’eau s’écoule toute seule', 'Pour refroidir l’eau', 'Pour que ce soit plus joli'], ok: 0, hint: 'L’eau ne remonte jamais toute seule.', why: 'Sans pente continue, l’eau stagne et finit par couler sur le mur.' },
+    { k: 'find', q: 'Montrez la pompe de relevage.', find: 'pompe', set: { drain: 'goulotte', xray: true }, hint: 'Un petit boîtier bleu dans la goulotte, sous l’unité.', why: 'Elle remonte l’eau quand une pente naturelle est impossible.' },
+    { k: 'qcm', q: 'À quoi servent les plots en caoutchouc sous le groupe ?', a: ['À absorber les vibrations et le bruit', 'À isoler du courant électrique', 'À augmenter la puissance'], ok: 0, hint: 'Le compresseur et le ventilateur tournent en permanence.', why: 'Ils évitent que les vibrations passent dans le mur et dans la maison.' },
+    { k: 'vf', q: 'Le câble d’interconnexion permet aux deux unités de se parler.', ok: true, set: { xray: true }, hint: 'Il relie l’unité intérieure au groupe, en plus des tubes.', why: 'Vrai : il transporte l’alimentation et les informations entre les deux unités.' }
+  ] },
+  { t: 'Les systèmes', d: 'Multi-split, VRF, gainable', q: [
+    { k: 'qcm', q: 'Dans ce multi-split, comment sont raccordées les unités ?', a: ['Un réseau commun avec des refnets', 'Chacune a sa propre liaison jusqu’au groupe', 'Chacune a son propre groupe'], ok: 1, set: { sys: 'multi', xray: true }, hint: 'Comptez les liaisons qui arrivent au groupe.', why: 'Une liaison par unité. Le réseau commun avec refnets, c’est le VRF.' },
+    { k: 'qcm', q: 'Sur un VRF, comment s’appelle le raccord en Y à chaque piquage ?', a: ['Un refnet', 'Un détendeur', 'Un registre'], ok: 0, set: { sys: 'vrf', xray: true }, hint: 'Un mot anglais en six lettres.', why: 'Le refnet prélève le fluide pour une unité et laisse passer le reste.' },
+    { k: 'find', q: 'Montrez un refnet sur ce VRF.', find: 'refnet', set: { sys: 'vrf', xray: true }, hint: 'Un petit Y sur le réseau, là où une unité se branche.', why: 'Un refnet par unité, sauf la dernière de la ligne.' },
+    { k: 'qcm', q: 'Avec un gainable, que voit-on dans les pièces ?', a: ['Seulement des bouches et une grille de reprise', 'Une unité accrochée au mur', 'Rien du tout'], ok: 0, set: { types: 'gainable' }, hint: 'L’appareil est caché dans le faux plafond.', why: 'Tout est caché : on ne voit que les bouches de soufflage et la reprise.' },
+    { k: 'vf', q: 'Avec le zoning, chaque pièce peut avoir sa propre température.', ok: true, set: { types: 'gainable', zoning: true }, hint: 'Chaque pièce a son thermostat.', why: 'Vrai : le thermostat de chaque pièce ouvre ou ferme son registre.' },
+    { k: 'find', q: 'Montrez un registre motorisé.', find: 'registre', set: { types: 'gainable', zoning: true, xray: true }, hint: 'Un volet à la sortie du gainable, sur le départ d’une gaine.', why: 'Il ouvre ou ferme l’air d’une pièce, commandé par son thermostat.' },
+    { k: 'qcm', q: 'Reprise d’air dans le couloir : que faut-il prévoir sur les portes ?', a: ['Un détalonnage, un jour sous la porte', 'Des portes vitrées', 'Rien de particulier'], ok: 0, set: { types: 'gainable' }, hint: 'L’air soufflé dans la chambre doit pouvoir revenir, porte fermée.', why: 'Sans détalonnage, la pièce se met en surpression et le débit chute.' }
+  ] },
+  { t: 'Pannes et bons réflexes', d: 'Reconnaître ce qui cloche', q: [
+    { k: 'qcm', q: 'Un filtre encrassé, qu’est-ce que ça change ?', a: ['Rien, c’est esthétique', 'Moins d’air passe : moins de puissance, plus de consommation', 'La clim souffle plus fort'], ok: 1, set: { fault: 'filtre' }, hint: 'Regardez le débit d’air sous l’unité.', why: 'Moins d’air sur l’échangeur, c’est moins de chaleur échangée.' },
+    { k: 'qcm', q: 'De l’eau coule de l’unité intérieure le long du mur. Cause la plus probable ?', a: ['Évacuation des condensats bouchée ou en contre-pente', 'Il manque du fluide', 'Le disjoncteur est trop petit'], ok: 0, set: { fault: 'pente' }, hint: 'C’est de l’eau, pas du fluide.', why: 'L’eau de condensation ne s’évacue plus : le bac déborde.' },
+    { k: 'vf', q: 'En hiver, il est normal que le groupe s’arrête parfois de souffler et fume un peu.', ok: true, set: { mode: 'heat' }, hint: 'Par temps froid, du givre se forme sur l’échangeur.', why: 'Vrai : c’est le dégivrage. La « fumée » est de la vapeur d’eau.' },
+    { k: 'qcm', q: 'Le groupe est coincé contre une haie. Conséquence ?', a: ['Il reprend son propre air et perd en efficacité', 'Aucune', 'Il fait moins de bruit'], ok: 0, set: { fault: 'obstrue' }, hint: 'Regardez où repart l’air soufflé.', why: 'Il recycle son air chaud : il force, consomme plus et peut se mettre en sécurité.' },
+    { k: 'qcm', q: 'Il manque du fluide frigorigène. Que faut-il faire ?', a: ['Chercher et réparer la fuite avant de recharger', 'En rajouter chaque été', 'Changer le filtre'], ok: 0, set: { fault: 'fluide' }, hint: 'Le circuit est fermé : le fluide ne disparaît pas tout seul.', why: 'Recharger sans réparer, c’est retrouver la panne quelques mois plus tard.' },
+    { k: 'qcm', q: 'Qui a le droit d’intervenir sur le fluide frigorigène ?', a: ['Un technicien titulaire de l’attestation d’aptitude', 'Tout le monde', 'N’importe quel électricien'], ok: 0, hint: 'Ces fluides sont réglementés.', why: 'La manipulation des fluides demande une attestation, pour la sécurité et l’environnement.' },
+    { k: 'find', q: 'Montrez où part l’eau de condensation.', find: 'condensats', set: { xray: true }, hint: 'Un petit tuyau qui part de l’unité intérieure et goutte dehors.', why: 'Évacuation en pente continue, ou pompe de relevage si c’est impossible.' }
+  ] },
+  { t: 'Dimensionner', d: 'Les calculs de base, pas à pas', q: [
+    { k: 'qcm', q: 'Une pièce de 4 m × 5 m sous 2,5 m de plafond. Quel volume ?', a: ['20 m³', '50 m³', '11,5 m³'], ok: 1, hint: 'Longueur × largeur × hauteur.', why: '4 × 5 = 20 m², puis 20 × 2,5 = 50 m³.' },
+    { k: 'qcm', q: '50 m³ avec la règle des 40 W/m³ : quelle puissance ?', a: ['2 000 W, soit 2 kW', '200 W', '90 W'], ok: 0, hint: 'On multiplie le volume par 40.', why: '50 × 40 = 2 000 W = 2 kW.' },
+    { k: 'qcm', q: 'Un brassage de 5 volumes par heure dans 50 m³, c’est quel débit d’air ?', a: ['10 m³/h', '250 m³/h', '2 500 m³/h'], ok: 1, hint: 'On renouvelle 5 fois le volume en une heure.', why: '50 × 5 = 250 m³/h.' },
+    { k: 'qcm', q: 'Lequel augmente le besoin de froid ?', a: ['Une grande baie vitrée plein sud', 'Un plafond plus bas', 'Un sol carrelé'], ok: 0, hint: 'Pensez à ce qui fait entrer de la chaleur.', why: 'Le soleil à travers le vitrage est un gros apport de chaleur.' },
+    { k: 'vf', q: 'Une salle serveur ou un four ajoutent de la chaleur à évacuer.', ok: true, hint: 'Tout appareil qui fonctionne chauffe.', why: 'Vrai : on ajoute ces apports au calcul de base.' },
+    { k: 'qcm', q: 'Un séjour de 30 m² sous 2,5 m, à 40 W/m³ : environ ?', a: ['3 kW', '1 kW', '7,5 kW'], ok: 0, hint: 'D’abord le volume : 30 × 2,5.', why: '30 × 2,5 = 75 m³, et 75 × 40 = 3 000 W = 3 kW.' }
+  ] }
 ];
-const quiz = { on: false, i: 0, score: 0, find: null, done: false };
+const RANKS = [[0, 'Curieux'], [3, 'Apprenti'], [7, 'Installateur'], [11, 'Technicien'], [15, 'Expert clim']];
+const QKEY = 'climapprendre-defi';
+let best = { lv: {}, all: false };
+try { best = Object.assign(best, JSON.parse(localStorage.getItem(QKEY)) || {}); } catch (e) { }
+const qsave = () => { try { localStorage.setItem(QKEY, JSON.stringify(best)); } catch (e) { } };
+const totStars = () => LEVELS.reduce((n, l, i) => n + ((best.lv[i] || {}).stars || 0), 0);
+const rank = () => RANKS.filter(r => totStars() >= r[0]).pop()[1];
+const unlocked = i => i === 0 || best.all || ((best.lv[i - 1] || {}).stars || 0) >= 1;
+const starRow = n => [0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}">★</i>`).join('');
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+const quiz = { on: false, lv: 0, i: 0, base: 0, bonus: 0, streak: 0, bestStreak: 0, help: 2, done: false, find: null, tries: 0, helped: false, missed: [], ord: null, snap: null, cfg: '' };
+const SNAP = ['sys', 'types', 'mode', 'xray', 'labels', 'zoning', 'zones', 'drain', 'support', 'diff', 'power', 'fault'];
+const cur = () => LEVELS[quiz.lv].q[quiz.i];
+
+function over(html) { const o = $('#qover'); o.innerHTML = html; o.hidden = !html; }
+function applySet(set) {
+  set = set || {};
+  const c = { sys: 'mono', types: 'mural', xray: false, zoning: true, drain: 'gravite', fault: null, mode: 'cool', ...set };
+  setMode(c.mode);
+  S.labels = false; S.power = true; S.fault = c.fault; S.xray = c.xray;
+  const key = [c.sys, c.types, c.zoning, c.drain].join('|');
+  if (key !== quiz.cfg) {
+    quiz.cfg = key;
+    S.sys = c.sys; S.types = [c.types]; S.zoning = c.zoning; S.zones = [true, true, true]; S.drain = c.drain;
+    C.build();
+  }
+}
+function endQuiz() {
+  if (!quiz.snap) return;
+  const s = JSON.parse(quiz.snap); quiz.snap = null; quiz.on = false; quiz.find = null; quiz.cfg = '';
+  S.quizfind = false; setMode(s.mode); Object.assign(S, s); C.build(); sync(); renderFaults();
+  over(''); $('#dockHud').hidden = true; $('#dockHelp').hidden = true;
+}
+
+function qMap() {
+  quiz.on = false; quiz.find = null; S.quizfind = false; C.spot(null);
+  if ($('#dock').hidden === false) dock(false);
+  const t = totStars();
+  over(`<div class="qcard">
+    <div class="qtop"><div><h3>Le défi clim</h3><p>Six niveaux, du plus simple au plus technique. Une étoile suffit pour ouvrir le niveau suivant.</p></div>
+    <div class="qrank"><span>Grade</span><b>${rank()}</b><small>${t} étoile${t > 1 ? 's' : ''} sur ${LEVELS.length * 3}</small></div></div>
+    <div class="qlevels">${LEVELS.map((L, i) => { const u = unlocked(i), b = best.lv[i] || {}; return `<button class="qlv${u ? '' : ' locked'}${b.stars ? ' played' : ''}" data-lv="${i}"${u ? '' : ' disabled'}>
+      <span class="qn">${i + 1}</span><b>${L.t}</b><small>${L.d}</small>
+      <span class="qfoot"><span class="qstars">${starRow(b.stars || 0)}</span>${u ? (b.pts ? `<em>${b.pts} pts</em>` : `<em>${L.q.length} questions</em>`) : '<em>Verrouillé</em>'}</span></button>`; }).join('')}</div>
+    <div class="qbar"><button id="qAll">${best.all ? 'Remettre les verrous' : 'Formateur : tout débloquer'}</button><button id="qReset">Effacer les scores</button><span></span><button id="qClose" class="primary">Fermer</button></div>
+  </div>`);
+  $$('#qover .qlv').forEach(b => b.onclick = () => qStart(+b.dataset.lv));
+  $('#qAll').onclick = () => { best.all = !best.all; qsave(); qMap(); };
+  $('#qReset').onclick = () => { if (confirm('Effacer toutes les étoiles et les scores de ce poste ?')) { best = { lv: {}, all: best.all }; qsave(); qMap(); } };
+  $('#qClose').onclick = closeDock;
+}
+function qStart(lv) {
+  Object.assign(quiz, { on: true, lv, i: 0, base: 0, bonus: 0, streak: 0, bestStreak: 0, help: 2, missed: [] });
+  over(''); dock(true); quizShow();
+}
+function hud(pop) {
+  const L = LEVELS[quiz.lv], n = L.q.length;
+  const pips = L.q.map((q, i) => `<i class="${i < quiz.i ? (quiz.res[i] || '') : i === quiz.i ? 'now' : ''}"></i>`).join('');
+  $('#dockHud').innerHTML = `<span class="hl">Niveau ${quiz.lv + 1} · ${L.t}</span><span class="pips">${pips}</span><span class="hs"><b>${quiz.base + quiz.bonus}</b> pts</span>${quiz.streak >= 2 ? `<span class="hstreak">Série de ${quiz.streak}</span>` : ''}${pop ? `<span class="hpop">${pop}</span>` : ''}`;
+  $('#dockHud').hidden = false;
+  $('#dockStep').textContent = (quiz.i + 1) + ' / ' + n;
+  $('#dockHelp').textContent = 'Coup de pouce (' + quiz.help + ')';
+  $('#dockHelp').disabled = quiz.help <= 0 || quiz.done;
+}
 function quizShow() {
-  const q = QUIZ[quiz.i]; quiz.done = false; quiz.find = q.find || null;
-  S.quizfind = !!q.find; if (q.find) { S.xray = true; S.mode = S.mode; } C.refresh(); sync(); C.spot(null);
-  $('#dockStep').textContent = (quiz.i + 1) + ' / ' + QUIZ.length; $('#dockTitle').textContent = q.q;
-  $('#dockText').textContent = q.find ? 'Cliquez sur le bon élément du schéma.' : '';
-  $('#dockAns').innerHTML = q.find ? '' : q.a.map((a, i) => `<button data-i="${i}">${a}</button>`).join('');
-  $$('#dockAns button').forEach(b => b.onclick = () => quizAnswer(+b.dataset.i === q.ok, b));
-  $('#dockPrev').hidden = true; $('#dockNext').textContent = 'Passer';
+  const q = cur(); if (quiz.i === 0) quiz.res = [];
+  Object.assign(quiz, { done: false, tries: 0, helped: false, find: q.k === 'find' ? q.find : null, ord: null });
+  applySet(q.set);
+  S.quizfind = q.k === 'find'; C.refresh(); sync(); C.spot(null);
+  $('#dockTitle').textContent = q.q;
+  $('#dockText').textContent = q.k === 'find' ? 'Cliquez sur le bon élément du schéma.' : q.k === 'ordre' ? 'Cliquez les étapes dans le bon ordre.' : '';
+  const A = $('#dockAns');
+  if (q.k === 'qcm') A.innerHTML = shuffle(q.a.map((a, i) => i)).map(i => `<button data-i="${i}">${q.a[i]}</button>`).join('');
+  else if (q.k === 'vf') A.innerHTML = '<button data-v="1" class="vf">Vrai</button><button data-v="0" class="vf">Faux</button>';
+  else if (q.k === 'ordre') { quiz.ord = { n: 0, err: 0 }; A.innerHTML = shuffle(q.a.map((a, i) => i)).map(i => `<button data-o="${i}">${q.a[i]}</button>`).join(''); }
+  else A.innerHTML = '';
+  A.className = 'dock-answers' + (q.k === 'ordre' ? ' ordre' : '');
+  $$('#dockAns [data-i]').forEach(b => b.onclick = () => { b.classList.add(+b.dataset.i === q.ok ? 'ok' : 'ko'); if (+b.dataset.i !== q.ok) $(`#dockAns [data-i="${q.ok}"]`).classList.add('ok'); finish(+b.dataset.i === q.ok); });
+  $$('#dockAns [data-v]').forEach(b => b.onclick = () => { const g = (b.dataset.v === '1') === q.ok; b.classList.add(g ? 'ok' : 'ko'); if (!g) $(`#dockAns [data-v="${q.ok ? 1 : 0}"]`).classList.add('ok'); finish(g); });
+  $$('#dockAns [data-o]').forEach(b => b.onclick = () => ordPick(b));
+  $('#dockPrev').hidden = true; $('#dockHelp').hidden = false; $('#dockNext').textContent = 'Passer';
+  hud();
 }
-function quizAnswer(good, btn) {
-  if (quiz.done) return; quiz.done = true; const q = QUIZ[quiz.i];
-  if (good) quiz.score++;
-  if (btn) { btn.classList.add(good ? 'ok' : 'ko'); if (!good) $$('#dockAns button')[q.ok].classList.add('ok'); }
-  $('#dockText').textContent = (good ? 'Exact. ' : 'Pas tout à fait. ') + q.why;
-  if (q.find) { quiz.find = null; S.quizfind = false; C.refresh(); C.spot(q.find); }
-  $('#dockNext').textContent = quiz.i === QUIZ.length - 1 ? 'Voir le score' : 'Question suivante';
+function ordPick(b) {
+  if (quiz.done || b.classList.contains('ok')) return;
+  const q = cur(), o = quiz.ord;
+  if (+b.dataset.o === o.n) { o.n++; b.classList.remove('next'); b.classList.add('ok'); b.dataset.n = o.n; if (o.n === q.a.length) finish(o.err <= 1, o.err === 1); }
+  else { o.err++; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); $('#dockText').textContent = o.err === 1 ? 'Pas encore celle-là. Une erreur permise.' : 'Encore raté : cette question ne rapportera rien, mais terminez l’ordre.'; }
 }
-function quizPick(id) { quizAnswer(id === quiz.find); }
+function finish(good, partial) {
+  if (quiz.done) return; quiz.done = true;
+  const q = cur(), full = good && !partial && !quiz.helped && quiz.tries === 0;
+  const pts = good ? (full ? 100 : 50) : 0;
+  let bonus = 0;
+  if (full) { quiz.streak++; if (quiz.streak >= 3) bonus = 25; } else if (!good) quiz.streak = 0;
+  quiz.bestStreak = Math.max(quiz.bestStreak, quiz.streak);
+  quiz.base += pts; quiz.bonus += bonus;
+  quiz.res[quiz.i] = full ? 'ok' : good ? 'mid' : 'ko';
+  if (!good) quiz.missed.push(q);
+  if (q.k === 'ordre' && !good) $$('#dockAns [data-o]').forEach(b => { if (!b.classList.contains('ok')) { b.classList.add('ok'); b.dataset.n = +b.dataset.o + 1; } });
+  $('#dockText').textContent = (full ? 'Bravo ! ' : good ? 'Correct. ' : 'Pas tout à fait. ') + q.why;
+  if (q.k === 'find') { quiz.find = null; S.quizfind = false; C.refresh(); C.spot(q.find === 'u-' ? 'uint' : q.find); }
+  $('#dockAns').classList.add('done');
+  $('#dockNext').textContent = quiz.i === LEVELS[quiz.lv].q.length - 1 ? 'Voir le résultat' : 'Question suivante';
+  hud(pts ? '+' + (pts + bonus) + (bonus ? ' (série)' : '') : '');
+  if (!good) { const d = $('#dock'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); }
+}
+function quizPick(id) {
+  if (quiz.done) return;
+  const q = cur(), ok = id === q.find || (q.find === 'u-' && id.startsWith('u-'));
+  if (ok) return finish(true, quiz.tries > 0);
+  quiz.tries++;
+  if (quiz.tries < 2) {
+    const nm = INFO[id] ? INFO[id][0] : 'un autre élément';
+    $('#dockText').textContent = `Non, ça c’est : ${nm}. Encore un essai !`;
+    const d = $('#dock'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
+  } else finish(false);
+}
+function quizHelp() {
+  if (quiz.done || quiz.help <= 0 || quiz.helped) return;
+  const q = cur(); quiz.help--; quiz.helped = true;
+  $('#dockText').textContent = 'Coup de pouce : ' + q.hint;
+  if (q.k === 'qcm') { const w = shuffle($$('#dockAns [data-i]').filter(b => +b.dataset.i !== q.ok))[0]; if (w) { w.disabled = true; w.classList.add('gone'); } }
+  if (q.k === 'ordre') { const nb = $(`#dockAns [data-o="${quiz.ord.n}"]`); if (nb) nb.classList.add('next'); }
+  hud();
+}
 function quizNext() {
-  if (quiz.i >= QUIZ.length) return closeDock();
+  if (!quiz.on) return;
+  if (!quiz.done) { quiz.tries = 2; finish(false); return; }
   quiz.i++;
-  if (quiz.i < QUIZ.length) return quizShow();
-  C.spot(null); quiz.find = null; S.quizfind = false; C.refresh();
-  $('#dockStep').textContent = quiz.score + ' / ' + QUIZ.length;
-  $('#dockTitle').textContent = quiz.score >= 8 ? 'Bravo, c’est acquis' : quiz.score >= 5 ? 'Bien, encore un petit effort' : 'À revoir ensemble';
-  $('#dockText').textContent = 'Relancez le quiz ou reprenez la visite guidée pour revoir les points manqués.';
-  $('#dockAns').innerHTML = ''; $('#dockNext').textContent = 'Fermer';
+  if (quiz.i < LEVELS[quiz.lv].q.length) return quizShow();
+  qResult();
 }
-$('#bQ').onclick = () => { stopDef(); ti = -1; quiz.on = true; quiz.i = 0; quiz.score = 0; dock(true); quizShow(); };
+function qResult() {
+  const L = LEVELS[quiz.lv], max = L.q.length * 100, r = quiz.base / max;
+  const stars = r >= 0.9 ? 3 : r >= 0.7 ? 2 : r >= 0.5 ? 1 : 0, total = quiz.base + quiz.bonus;
+  const was = unlocked(quiz.lv + 1), b = best.lv[quiz.lv] || {};
+  if (stars > (b.stars || 0) || (stars === (b.stars || 0) && total > (b.pts || 0))) { best.lv[quiz.lv] = { stars: Math.max(stars, b.stars || 0), pts: Math.max(total, b.pts || 0) }; qsave(); }
+  const opened = !was && unlocked(quiz.lv + 1) && quiz.lv + 1 < LEVELS.length;
+  quiz.on = false; quiz.find = null; S.quizfind = false; C.spot(null); C.refresh(); dock(false);
+  const title = ['Pas encore… on recommence ?', 'Niveau réussi', 'Très bien !', 'Parfait !'][stars];
+  over(`<div class="qcard qres">
+    <p class="qkick">Niveau ${quiz.lv + 1} · ${L.t}</p>
+    <div class="qbig">${[0, 1, 2].map(i => `<i class="${i < stars ? 'on' : ''}" style="animation-delay:${0.25 + i * 0.35}s">★</i>`).join('')}</div>
+    <h3>${title}</h3>
+    <div class="qnums"><div><b>${total}</b><span>points</span></div><div><b>${quiz.res.filter(x => x === 'ok').length} / ${L.q.length}</b><span>du premier coup</span></div><div><b>${quiz.bestStreak}</b><span>meilleure série</span></div></div>
+    ${opened ? `<p class="qopen">Niveau ${quiz.lv + 2} débloqué : ${LEVELS[quiz.lv + 1].t}</p>` : ''}
+    ${stars === 0 ? '<p class="qtip">Il faut la moitié des points pour gagner une étoile. Les coups de pouce sont là pour ça !</p>' : ''}
+    ${quiz.missed.length ? `<div class="qmiss"><b>À retenir</b>${quiz.missed.map(q => `<p><strong>${q.q}</strong> ${q.why}</p>`).join('')}</div>` : ''}
+    <div class="qbar"><button id="qMapB">Tous les niveaux</button><button id="qAgain">Rejouer</button><span></span>${quiz.lv + 1 < LEVELS.length && unlocked(quiz.lv + 1) ? '<button id="qNextL" class="primary">Niveau suivant</button>' : '<button id="qEnd" class="primary">Terminer</button>'}</div>
+  </div>`);
+  $('#qMapB').onclick = qMap; $('#qAgain').onclick = () => qStart(quiz.lv);
+  if ($('#qNextL')) $('#qNextL').onclick = () => qStart(quiz.lv + 1);
+  if ($('#qEnd')) $('#qEnd').onclick = closeDock;
+}
+$('#dockHelp').onclick = quizHelp;
+$('#bQ').onclick = () => {
+  stopDef(); ti = -1;
+  if (!quiz.snap) { const s = {}; SNAP.forEach(k => s[k] = S[k]); quiz.snap = JSON.stringify(s); quiz.cfg = ''; }
+  qMap();
+};
 
 /* ---------- Démarrage ---------- */
 C.build(); sync(); showHome(); renderDim(); renderFaults();

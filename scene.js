@@ -446,6 +446,7 @@ function drawLinks(o) {
     const mk = (d, a) => { const oo = off + d; return P([[MX + 8, ey0 + oo], [RX0 + oo, ey0 + oo], [RX0 + oo, py + oo], [u.port.x - 16 - a, py + oo], [u.port.x - 16 - a, u.port.y + a], [u.port.x, u.port.y + a]]); };
     const lg = el('g', { 'data-info': 'liaison' }, gp);
     const dg = mk(0, 0), dl = mk(7, 7), dc = mk(13, 13);
+    el('path', { d: mk(4, 4), fill: 'none', stroke: 'transparent', 'stroke-width': 22, 'pointer-events': 'stroke' }, lg); // zone cliquable élargie
     tube(lg, dg, 'k-gas', 'd-h', 5); tube(lg, dl, 'k-lb', 'd-c', 3.4);
     insul(dg, 5); insul(dl, 3.4);
     const cg = el('g', { 'data-info': 'interco' }, gp);

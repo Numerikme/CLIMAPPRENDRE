@@ -257,3 +257,79 @@ stop{transition:stop-color 1.2s ease}
 @media (prefers-reduced-motion:reduce){
   .rays,.flake{animation:none}
 }
+
+/* ============ Défi clim (quiz par niveaux) ============ */
+.hud{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin-bottom:6px;position:relative}
+.hud .hl{font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+.hud .pips{display:flex;gap:4px}
+.hud .pips i{width:18px;height:6px;border-radius:3px;background:#ddd5c6}
+.hud .pips i.now{background:var(--ink)}
+.hud .pips i.ok{background:#1f8a4d}.hud .pips i.mid{background:#e2a417}.hud .pips i.ko{background:#c43c2c}
+.hud .hs{margin-left:auto;font-variant-numeric:tabular-nums}.hud .hs b{font-size:18px;color:var(--ink)}
+.hud .hstreak{background:#e2a417;color:#2b2208;font-weight:700;border-radius:4px;padding:1px 8px;animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+.hud .hpop{position:absolute;right:0;top:-6px;font-weight:800;font-size:20px;color:#1f8a4d;pointer-events:none;animation:floatup 1.3s ease-out forwards}
+@keyframes floatup{0%{opacity:0;transform:translateY(8px)}15%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
+@keyframes pop{from{transform:scale(.4)}}
+.dock-answers button.vf{min-width:120px;text-align:center;font-weight:700;font-size:18px}
+.dock-answers.done button{pointer-events:none}
+.dock-answers.done button:not(.ok):not(.ko){opacity:.45}
+.dock-answers button.gone{opacity:.25;text-decoration:line-through}
+.dock-answers button.ok,.dock-answers button.ko{animation:okpop .3s cubic-bezier(.2,1.6,.4,1)}
+@keyframes okpop{from{transform:scale(.94)}}
+.dock-answers.ordre button{position:relative;padding-left:40px}
+.dock-answers.ordre button::before{content:attr(data-n);position:absolute;left:9px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;border:1.5px dashed #b9b0a0;font-weight:700;font-size:13px;display:grid;place-items:center}
+.dock-answers.ordre button.ok::before{border:0;background:#fff;color:#1f8a4d}
+.dock-answers.ordre button.next{border-color:#e2a417;box-shadow:0 0 0 2px #e2a417}
+.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+#dockHelp{border-color:#e2a417}
+#dockHelp:disabled{opacity:.4;cursor:default}
+
+.qover{position:absolute;inset:0;background:rgba(242,237,227,.93);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 18px;z-index:5;animation:fadein .25s}
+.qover[hidden]{display:none}
+@keyframes fadein{from{opacity:0}}
+.qcard{background:var(--panel);border:2px solid var(--ink);border-radius:12px;padding:24px 26px;width:min(900px,100%);box-shadow:0 14px 40px rgba(29,40,49,.2);animation:rise .35s cubic-bezier(.2,.8,.2,1)}
+.qtop{display:flex;gap:20px;align-items:flex-start;margin-bottom:18px}
+.qtop h3{margin:0 0 4px;font-size:28px;letter-spacing:-.01em}
+.qtop p{margin:0;color:var(--mute);font-size:16px;max-width:52ch}
+.qrank{margin-left:auto;text-align:right;flex:none}
+.qrank span{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+.qrank b{display:block;font-size:24px}
+.qrank small{color:var(--mute)}
+.qlevels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.qlv{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:3px;padding:14px 16px;border:2px solid var(--line);border-radius:10px;background:#fff;min-height:150px}
+.qlv:not(:disabled):hover{border-color:var(--ink);transform:translateY(-2px)}
+.qlv .qn{font-size:34px;font-weight:800;line-height:1;color:var(--accent)}
+.qlv b{font-size:18px}
+.qlv small{color:var(--mute);font-size:14px}
+.qfoot{margin-top:auto;display:flex;align-items:center;gap:10px;width:100%;padding-top:8px}
+.qfoot em{margin-left:auto;font-style:normal;font-size:13px;color:var(--mute)}
+.qstars i,.qbig i{font-style:normal;color:#ddd5c6}
+.qstars i{font-size:20px}
+.qstars i.on,.qbig i.on{color:#e2a417}
+.qlv.locked{background:#f1ece2;cursor:not-allowed}
+.qlv.locked .qn,.qlv.locked b{color:#a69d8e}
+.qbar{display:flex;gap:8px;align-items:center;margin-top:18px}
+.qbar span{flex:1}
+.qres{text-align:center;max-width:680px}
+.qkick{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);font-weight:700}
+.qbig{font-size:64px;line-height:1.1;margin:6px 0}
+.qbig i{display:inline-block;margin:0 4px}
+.qbig i.on{animation:starin .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes starin{from{transform:scale(0) rotate(-40deg);color:#ddd5c6}}
+.qres h3{margin:0 0 14px;font-size:26px}
+.qnums{display:flex;justify-content:center;gap:12px;margin-bottom:14px}
+.qnums div{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px 18px;min-width:130px}
+.qnums b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.qnums span{font-size:13px;color:var(--mute)}
+.qopen{display:inline-block;background:#1f8a4d;color:#fff;font-weight:700;padding:7px 14px;border-radius:6px;margin:0 0 12px;animation:pop .4s .9s cubic-bezier(.2,1.6,.4,1) both}
+.qtip{color:var(--mute);margin:0 0 12px}
+.qmiss{text-align:left;border:1px solid var(--line);border-radius:8px;background:#fff;padding:12px 16px;max-height:220px;overflow:auto}
+.qmiss b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-bottom:4px}
+.qmiss p{margin:6px 0;font-size:15px}
+.qmiss strong{display:block}
+@media (max-width:1100px){.qlevels{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){.qbig i.on,.hud .hpop,.shake,.qopen{animation:none}}
+
+/* en mode « trouver », la goulotte transparente ne bloque pas le clic sur ce qu’elle contient */
+.quizfind.xray .gou,.quizfind.xray [data-info=goulotte]{pointer-events:none}
