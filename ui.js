@@ -25,11 +25,12 @@ const INFO = {
   plenum: ['Plénum de soufflage', 'Une boîte fixée en sortie du gainable. Elle répartit l’air entre les différentes gaines.', 'En zoning, c’est lui qui porte les registres motorisés.'],
   registre: ['Registre motorisé', 'Un volet dans la gaine, piloté par le thermostat de la pièce. Ouvert, l’air passe ; fermé, la pièce n’est plus servie.', 'C’est le zoning : une seule machine, une température par pièce.'],
   bouche: ['Bouche de soufflage', 'C’est par là que l’air arrive dans la pièce. Une bouche circulaire diffuse l’air en nappe le long du plafond ; une grille rectangulaire le dirige davantage.', 'Bien choisie et bien placée : pas de courant d’air sur les occupants.'],
-  reprise: ['Grille de reprise', 'L’air de la pièce repart vers le gainable par cette grille, à travers un filtre. Il est traité puis renvoyé dans les gaines.', 'Ce que l’on souffle, il faut pouvoir le reprendre. Reprise dans le couloir ou centralisée : les portes doivent être détalonnées pour laisser l’air revenir.'],
+  reprise: ['Grille de reprise filtrante', 'L’air de la pièce repart vers le gainable par cette grille. Elle doit toujours être filtrante : le filtre arrête la poussière avant qu’elle n’encrasse l’échangeur du gainable. La reprise se raccorde à l’arrière du gainable.', 'Ce que l’on souffle, il faut pouvoir le reprendre. Reprise dans le couloir ou centralisée : les portes doivent être détalonnées pour laisser l’air revenir.'],
   refnet: ['Refnet', 'Sur un VRF, un seul réseau de tubes part du groupe et dessert les unités les unes après les autres, en série. À chaque unité, un refnet (raccord en Y) prélève ce dont elle a besoin et laisse passer le reste vers la suivante. Autre montage possible : un répartiteur par niveau, d’où part une liaison vers chaque unité.', 'Multi-split : une liaison par unité. VRF : un réseau commun et des refnets. La dernière unité de la ligne n’en a pas besoin.'],
   detalon: ['Détalonnage des portes', 'Quand la reprise est centralisée ou placée dans le couloir, l’air soufflé dans chaque pièce doit pouvoir revenir jusqu’à la grille, même porte fermée. On laisse donc un jour sous les portes : c’est le détalonnage.', 'Sans détalonnage, la pièce se met en surpression : le débit chute, la porte siffle et la température n’est pas atteinte.'],
-  plan: ['Focus gainable', 'Une seule machine cachée dans le faux plafond du cellier traite le salon et les trois chambres. Le plénum répartit l’air dans une gaine par pièce ; chaque gaine finit sur une bouche de soufflage. L’air revient au gainable par la reprise.', 'Changez le type de bouche, le zoning et la reprise à gauche. Cliquez sur un thermostat pour fermer une zone.'],
-  debit: ['Débit d’air par pièce', 'Chaque pièce reçoit un débit adapté à son volume : surface × hauteur sous plafond (2,5 m) × 5 brassages par heure. Une chambre de 20 m² : 20 × 2,5 × 5 = 250 m³/h.', 'Quand une zone est fermée, le gainable réduit sa ventilation : le débit total baisse, les autres pièces gardent leur débit.'],
+  plan: ['Focus gainable', 'Une seule machine, posée au centre de la maison dans les combles, traite le salon et les trois chambres. À l’avant, le plénum répartit l’air dans les gaines ; à l’arrière, la reprise filtrante ramène l’air ; sur le côté partent les liaisons vers le groupe extérieur. Chaque bouche souffle vers la fenêtre, à l’opposé de la porte et de la reprise.', 'Changez le type de bouche, le zoning et la reprise à gauche. Cliquez sur un thermostat pour fermer une zone.'],
+  debit: ['Débit d’air par pièce', 'Chaque pièce reçoit un débit adapté à son volume : surface × hauteur sous plafond (2,5 m) × 5 brassages par heure. Une chambre de 12 m² : 12 × 2,5 × 5 = 150 m³/h. Le salon de 35 m² : 437,5 m³/h.', 'Quand une zone est fermée, le gainable réduit sa ventilation : le débit total baisse, les autres pièces gardent leur débit.'],
+  diametre: ['Diamètre des gaines', 'Une gaine Ø160 transporte au maximum environ 300 m³/h, une Ø200 environ 450 m³/h. Le salon de 35 m² demande 437,5 m³/h : une seule Ø160 ne suffit pas, l’air siffle et la pièce n’atteint pas la consigne. Solutions : une Ø200, ou deux Ø160 avec deux bouches.', 'Chambres de 12 et 18 m² : 150 et 225 m³/h, une Ø160 suffit. Testez les trois choix pour le salon à gauche.'],
   porte: ['Porte', 'Vue de dessus, l’arc en pointillés montre l’ouverture de la porte.', 'Avec une reprise dans le couloir, l’air de la pièce repasse sous la porte : il faut la détalonner.'],
   'u-mural': ['Unité murale', 'La plus courante. Fixée en haut du mur, elle aspire l’air par le dessus et le souffle par le bas.', 'Simple et économique. Une unité par pièce.'],
   'u-cassette': ['Cassette', 'Encastrée dans le faux plafond, seule sa façade est visible. Elle souffle sur les côtés et reprend l’air au centre.', 'Idéale pour les bureaux et commerces. Pompe de relevage intégrée.'],
@@ -90,13 +91,13 @@ let sel = -1;
 function sync() {
   document.body.classList.toggle('heat', S.mode === 'heat');
   $$('.modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
-  const cur = { sys: S.sys, type: sel >= 0 ? S.types[sel] : S.types[0], support: S.sys === 'vrf' ? 'sol' : S.support, drain: S.drain, diff: S.diff, reprise: S.reprise, zoning: S.zoning ? '1' : '0', power: S.power ? '1' : '0' };
+  const cur = { sys: S.sys, type: sel >= 0 ? S.types[sel] : S.types[0], support: S.sys === 'vrf' ? 'sol' : S.support, drain: S.drain, diff: S.diff, reprise: S.reprise, salonD: S.salonD, zoning: S.zoning ? '1' : '0', power: S.power ? '1' : '0' };
   $$('.seg').forEach(seg => [...seg.children].forEach(b => b.classList.toggle('on', b.dataset.val === cur[seg.dataset.set])));
   $('[data-set=support] [data-val=mural]').disabled = S.sys === 'vrf';
   $('#bX').classList.toggle('on', S.xray); $('#bL').classList.toggle('on', S.labels);
   $('#legend').classList.toggle('show', S.xray && $('#dock').hidden);
   const pv = S.view === 'plan', gain = pv || S.types.includes('gainable'), gm = pv || (S.sys === 'mono' && gain);
-  $('#secGain').hidden = !gain; $('#segZone').hidden = !gm; $('#zoneHint').hidden = !(gm && S.zoning); $('#segRep').hidden = !pv;
+  $('#secGain').hidden = !gain; $('#segZone').hidden = !gm; $('#zoneHint').hidden = !(gm && S.zoning); $('#segRep').hidden = !pv; $('#secSalon').hidden = !pv;
   document.body.classList.toggle('planview', pv); $('#bP').classList.toggle('on', pv);
   // choix de la pièce
   const n = C.unitCount(), w = $('#selWrap'); w.hidden = n < 2;
@@ -119,6 +120,7 @@ $$('.seg').forEach(seg => seg.addEventListener('click', e => {
   if (k === 'sys') showHome();
   if (k === 'drain') showInfo(v === 'gravite' ? 'condensats' : 'pompe');
   if (k === 'reprise') showInfo(v === 'couloir' ? 'detalon' : 'reprise');
+  if (k === 'salonD') showInfo('diametre');
   if (k === 'support') showInfo('support');
 }));
 function setView(v) { if (S.view === v) return; S.view = v; C.spot(null); C.build(); sync(); if (v === 'plan') showInfo('plan'); else showHome(); }
@@ -343,7 +345,7 @@ const starRow = n => [0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}">★</i>
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 const quiz = { on: false, lv: 0, i: 0, base: 0, bonus: 0, streak: 0, bestStreak: 0, help: 2, done: false, find: null, tries: 0, helped: false, missed: [], ord: null, snap: null, cfg: '' };
-const SNAP = ['view', 'reprise', 'sys', 'types', 'mode', 'xray', 'labels', 'zoning', 'zones', 'drain', 'support', 'diff', 'power', 'fault'];
+const SNAP = ['view', 'reprise', 'salonD', 'sys', 'types', 'mode', 'xray', 'labels', 'zoning', 'zones', 'drain', 'support', 'diff', 'power', 'fault'];
 const cur = () => LEVELS[quiz.lv].q[quiz.i];
 
 function over(html) { const o = $('#qover'); o.innerHTML = html; o.hidden = !html; }

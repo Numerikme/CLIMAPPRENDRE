@@ -8,14 +8,14 @@ const G = 810, BX = 520, IX0 = 542, IX1 = 1538, RX0 = 456, MX = 440;
 const S = {
   sys: 'mono', types: ['mural'], support: 'mural', drain: 'gravite', zoning: true, diff: 'rond',
   mode: 'cool', power: true, xray: false, labels: false, fault: null, zones: [true, true, true],
-  apports: {}, def: null, view: 'coupe', reprise: 'couloir'
+  apports: {}, def: null, view: 'coupe', reprise: 'couloir', salonD: '2x160'
 };
 const NAMES = {
   groupe: 'Groupe extérieur', compresseur: 'Compresseur', v4v: 'Vanne 4 voies', echext: 'Échangeur extérieur',
   detendeur: 'Détendeur', ventilo: 'Ventilateur', liaison: 'Liaisons frigorifiques', interco: 'Câble d’interconnexion',
   alim: 'Câble d’alimentation', disj: 'Disjoncteur dédié', support: 'Support', goulotte: 'Goulotte',
   condensats: 'Évacuation des condensats', pompe: 'Pompe de relevage', uint: 'Unité intérieure', thermostat: 'Thermostat',
-  gaine: 'Gaine de soufflage', registre: 'Registre motorisé', bouche: 'Bouche de soufflage', reprise: 'Grille de reprise',
+  gaine: 'Gaine de soufflage', registre: 'Registre motorisé', bouche: 'Bouche de soufflage', reprise: 'Grille de reprise filtrante', diametre: 'Diamètre de gaine',
   refnet: 'Refnet', plenum: 'Plénum de soufflage', detalon: 'Jour sous la porte (détalonnage)', 'u-gainable': 'Gainable'
 };
 let hot = {}, labs = [], rooms = [], units = [], temps = [], L = null, gid = 0, spotId = null, layers = {};
@@ -575,31 +575,39 @@ function spot(id) {
 
 /* ---------- Focus gainable : plan de la maison vue de dessus ---------- */
 // Échelle : 72 px = 1 m. Hauteur sous plafond 2,5 m, brassage 5 volumes/heure.
-const PX = 72, HSP = 2.5, BRASS = 5;
+// Le gainable et les gaines sont dans les combles : vue « à travers » le plafond.
+const HSP = 2.5, BRASS = 5, CAPA = { 160: 300, 200: 450 };
 const PL = {
-  X0: 240, X1: 1360, Y0: 100, Y1: 800, HY0: 410, HY1: 520,
-  // zone = index du registre et du thermostat ; bx/by : bouche(s) ; door : porte [x0, x1] ; rep : grille de reprise (mode pièces)
+  X0: 260, X1: 1268, Y0: 110, Y1: 787, HY0: 326, HY1: 427,
+  // dir : sens du soufflage (−1 vers le haut, +1 vers le bas) = vers les fenêtres, à l’opposé de la porte et de la reprise
   rooms: [
-    { name: 'Salon', x: 240, y: 520, w: 720, h: 280, bouches: [[420, 575], [760, 575]], dir: 1, door: [870, 930], rep: [272, 548], lane: 495, ox: 1210, th: [260, 742] },
-    { name: 'Chambre 1', x: 240, y: 100, w: 340, h: 310, bouches: [[300, 362]], dir: -1, door: [400, 460], rep: [520, 386], lane: 474, ox: 1240, th: [260, 120] },
-    { name: 'Chambre 2', x: 580, y: 100, w: 360, h: 310, bouches: [[650, 362]], dir: -1, door: [740, 800], rep: [880, 386], lane: 455, ox: 1270, th: [600, 120] },
-    { name: 'Chambre 3', x: 940, y: 100, w: 420, h: 310, bouches: [[1010, 362]], dir: -1, door: [1100, 1160], rep: [1232, 386], lane: 436, ox: 1300, th: [960, 120] }
+    { name: 'Salon', x: 260, y: 427, w: 504, h: 360, m2: 35, dir: 1, door: [680, 740], rep: [630, 454], th: [276, 590] },
+    { name: 'Chambre 1', x: 260, y: 110, w: 288, h: 216, m2: 12, dir: -1, door: [390, 450], rep: [500, 302], th: [276, 180] },
+    { name: 'Chambre 2', x: 548, y: 110, w: 288, h: 216, m2: 12, dir: -1, door: [678, 738], rep: [788, 302], th: [564, 180] },
+    { name: 'Chambre 3', x: 836, y: 110, w: 432, h: 216, m2: 18, dir: -1, door: [1030, 1090], rep: [1140, 302], th: [852, 180] }
   ],
-  gain: { x: 1195, y: 630, w: 120, h: 60 }, plen: { x: 1192, y: 600, w: 126, h: 30 },
-  grilleCouloir: { x: 1325, y: 428, w: 26, h: 74 }, trunk: 420
+  gain: { x: 722, y: 354, w: 100, h: 44 }, plen: { x: 694, y: 344, w: 28, h: 64 }, filt: { x: 822, y: 348, w: 22, h: 56 },
+  grilleCouloir: { x: 884, y: 350, w: 30, h: 52 }, ext: { x: 1196, y: 816, w: 124, h: 48 }
 };
-const fmtN = n => n.toLocaleString('fr-FR');
-function planDebit(r) {
-  const m2 = (r.w / PX) * (r.h / PX), q = Math.round(m2 * HSP * BRASS / 5) * 5;
-  return { m2, q };
-}
+const fmtN = n => n.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+const planQ = r => r.m2 * HSP * BRASS;
 const zoneOpen = j => !S.zoning || S.zones[j] !== false;
+// gaines du salon selon le choix : [diamètre, bouche]
+function salonDucts() {
+  if (S.salonD === '2x160') return [[160, [380, 462]], [160, [560, 462]]];
+  return [[S.salonD === '160' ? 160 : 200, [470, 462]]];
+}
+function roomDucts(r, j) {
+  if (j === 0) return salonDucts();
+  return [[160, [r.x + 78, 290]]];
+}
 
 function planGround(g) {
   R(-3000, -2000, 7600, 5000, { class: 'grass', fill: '#8dbb62' }, g);
-  R(300, PL.Y1 + 8, 600, 58, { fill: '#c9a77c', stroke: '#a88759' }, g); // terrasse
-  for (let i = 1; i < 12; i++) el('line', { x1: 300 + i * 50, y1: PL.Y1 + 8, x2: 300 + i * 50, y2: PL.Y1 + 66, stroke: '#b38f63' }, g);
-  [[120, 210, 64], [1480, 260, 58], [110, 690, 52], [1490, 700, 66], [1450, 470, 40]].forEach(([x, y, r]) => {
+  R(320, PL.Y1 + 8, 380, 56, { fill: '#c9a77c', stroke: '#a88759' }, g); // terrasse
+  for (let i = 1; i < 8; i++) el('line', { x1: 320 + i * 50, y1: PL.Y1 + 8, x2: 320 + i * 50, y2: PL.Y1 + 64, stroke: '#b38f63' }, g);
+  R(1100, PL.Y1 + 8, 72, 110, { fill: '#cfc8bb' }, g); // allée
+  [[150, 200, 60], [150, 650, 50], [1470, 620, 62], [1500, 200, 44]].forEach(([x, y, r]) => {
     el('circle', { cx: x + 6, cy: y + 8, r, fill: 'rgba(30,50,20,.18)', class: 's-only' }, g);
     el('circle', { cx: x, cy: y, r, fill: '#6fa24c', class: 's-only' }, g);
     el('circle', { cx: x - r * 0.25, cy: y - r * 0.25, r: r * 0.55, fill: '#82b55c', class: 's-only' }, g);
@@ -608,77 +616,67 @@ function planGround(g) {
   });
 }
 function planFloors(g) {
-  const fl = (x, y, w, h, fill) => R(x, y, w, h, { fill }, g);
   PL.rooms.forEach((r, i) => {
-    fl(r.x, r.y, r.w, r.h, '#efe3cf');
-    for (let k = 1; k * 24 < r.h; k++) el('line', { x1: r.x, y1: r.y + k * 24, x2: r.x + r.w, y2: r.y + k * 24, stroke: '#e4d5bd', 'stroke-width': 1 }, g);
+    R(r.x, r.y, r.w, r.h, { fill: '#efe3cf' }, g);
+    for (let k = 1; k * 24 < r.h; k++) el('line', { x1: r.x, y1: r.y + k * 24, x2: r.x + r.w, y2: r.y + k * 24, stroke: '#e4d5bd' }, g);
     R(r.x, r.y, r.w, r.h, { class: 'tint', id: 'tint' + i, fill: 'rgba(0,0,0,0)' }, layers.tint);
-    R(r.x + 4, r.y + 4, r.w - 8, r.h - 8, {}, el('clipPath', { id: 'clipR' + i }, layers.defs)); // l'air reste dans la pièce
+    R(r.x + 4, r.y + 4, r.w - 8, r.h - 8, {}, el('clipPath', { id: 'clipR' + i }, layers.defs)); // l’air reste dans la pièce
   });
-  fl(PL.X0, PL.HY0, PL.X1 - PL.X0, PL.HY1 - PL.HY0, '#e6e1d8');
-  fl(960, 520, 200, 280, '#dfe8eb'); fl(1160, 520, 200, 280, '#e3ded3');
-  for (let x = 960; x < 1160; x += 25) el('line', { x1: x, y1: 520, x2: x, y2: 800, stroke: '#cfdade' }, g);
-  for (let y = 520; y < 800; y += 25) el('line', { x1: 960, y1: y, x2: 1160, y2: y, stroke: '#cfdade' }, g);
+  R(PL.X0, PL.HY0, PL.X1 - PL.X0, PL.HY1 - PL.HY0, { fill: '#e6e1d8' }, g);
+  R(764, 427, 216, 360, { fill: '#dfe8eb' }, g); R(980, 427, 288, 360, { fill: '#e6e1d8' }, g);
+  for (let x = 764; x < 980; x += 24) el('line', { x1: x, y1: 427, x2: x, y2: 787, stroke: '#cfdade' }, g);
+  for (let y = 427; y < 787; y += 24) el('line', { x1: 764, y1: y, x2: 980, y2: y, stroke: '#cfdade' }, g);
 }
 function planFurniture(g) {
   const f = { fill: '#ddd3c2', stroke: '#a99f8d', 'stroke-width': 1.3 };
   PL.rooms.slice(1).forEach(r => {
-    const bx = r.x + r.w / 2 - 66, by = r.y + 72;
-    R(bx, by, 132, 178, Object.assign({ rx: 6 }, f), g);
-    R(bx + 10, by + 10, 52, 30, { rx: 6, fill: '#f6f1e8', stroke: '#a99f8d' }, g);
-    R(bx + 70, by + 10, 52, 30, { rx: 6, fill: '#f6f1e8', stroke: '#a99f8d' }, g);
-    R(bx, by + 60, 132, 118, { rx: 4, fill: '#cbbfa9', stroke: '#a99f8d' }, g);
-    R(bx - 40, by + 4, 30, 30, Object.assign({ rx: 3 }, f), g); R(bx + 142, by + 4, 30, 30, Object.assign({ rx: 3 }, f), g);
-    R(r.x + r.w - 26, r.y + 150, 18, 150, Object.assign({}, f), g); // placard
+    const bx = r.x + r.w - 160, by = r.y + 44; // lit tête contre le mur de droite
+    R(bx, by, 144, 104, Object.assign({ rx: 6 }, f), g);
+    R(bx + 108, by + 8, 28, 40, { rx: 5, fill: '#f6f1e8', stroke: '#a99f8d' }, g);
+    R(bx + 108, by + 56, 28, 40, { rx: 5, fill: '#f6f1e8', stroke: '#a99f8d' }, g);
+    R(bx, by, 98, 104, { rx: 4, fill: '#cbbfa9', stroke: '#a99f8d' }, g);
   });
-  const s = PL.rooms[0];
-  el('path', Object.assign({ d: `M300 650 L520 650 L520 676 L330 676 L330 760 L300 760 Z` }, f), g); // canapé d'angle
-  R(380, 690, 90, 50, Object.assign({ rx: 4 }, f), g); // table basse
-  R(560, 780, 160, 14, Object.assign({}, f), g); // meuble TV
-  R(700, 640, 150, 86, Object.assign({ rx: 6 }, f), g); // table
-  [[715, 626], [775, 626], [715, 732], [775, 732]].forEach(([x, y]) => R(x, y, 40, 14, Object.assign({ rx: 4 }, f), g));
-  R(948 - 30, 540, 30, 240, Object.assign({}, f), g); // plan de travail
-  R(980, 690, 160, 90, { rx: 30, fill: '#f4f8fa', stroke: '#9fb2ba' }, g); // baignoire
-  el('circle', { cx: 1110, cy: 560, r: 18, fill: '#f4f8fa', stroke: '#9fb2ba' }, g);
-  R(1300, 738, 50, 52, Object.assign({ rx: 4 }, f), g); el('circle', { cx: 1325, cy: 764, r: 15, fill: '#f4f1ea', stroke: '#a99f8d' }, g);
-  void s;
+  el('path', Object.assign({ d: 'M300 640 L500 640 L500 664 L326 664 L326 740 L300 740 Z' }, f), g); // canapé d’angle
+  R(372, 690, 90, 46, Object.assign({ rx: 4 }, f), g);
+  R(560, 600, 140, 80, Object.assign({ rx: 6 }, f), g); // table
+  [[574, 586], [640, 586], [574, 680], [640, 680]].forEach(([x, y]) => R(x, y, 40, 14, Object.assign({ rx: 4 }, f), g));
+  R(540, 766, 150, 14, f, g); // meuble TV
+  R(782, 680, 180, 90, { rx: 30, fill: '#f4f8fa', stroke: '#9fb2ba' }, g); // baignoire
+  el('circle', { cx: 940, cy: 470, r: 18, fill: '#f4f8fa', stroke: '#9fb2ba' }, g);
 }
 function planWalls(g) {
   const W = '#3d4247', wall = (x1, y1, x2, y2, w) => el('line', { x1, y1, x2, y2, stroke: W, 'stroke-width': w, 'stroke-linecap': 'square' }, g);
-  const gaps = (fixed, a, b, horiz, list, w) => { let s = a; list.concat([[b, b]]).forEach(([g0, g1]) => { if (g0 > s) horiz ? wall(s, fixed, g0, fixed, w) : wall(fixed, s, fixed, g0, w); s = g1; }); };
-  // murs intérieurs
-  wall(580, PL.Y0, 580, PL.HY0, 8); wall(940, PL.Y0, 940, PL.HY0, 8);
-  gaps(PL.HY0, PL.X0, PL.X1, true, PL.rooms.slice(1).map(r => r.door), 8);
-  gaps(PL.HY1, PL.X0, PL.X1, true, [PL.rooms[0].door, [1000, 1050], [1170, 1222]], 8);
-  wall(960, PL.HY1, 960, PL.Y1, 8); wall(1160, PL.HY1, 1160, PL.Y1, 8);
-  // portes : vantail et débattement
+  const gaps = (fixed, a, b, list) => { let s = a; list.concat([[b, b]]).forEach(([g0, g1]) => { if (g0 > s) wall(s, fixed, g0, fixed, 8); s = g1; }); };
+  wall(548, PL.Y0, 548, PL.HY0, 8); wall(836, PL.Y0, 836, PL.HY0, 8);
+  gaps(PL.HY0, PL.X0, PL.X1, PL.rooms.slice(1).map(r => r.door));
+  gaps(PL.HY1, PL.X0, PL.X1, [PL.rooms[0].door, [800, 850], [1010, 1090]]);
+  wall(764, PL.HY1, 764, PL.Y1, 8); wall(980, PL.HY1, 980, PL.Y1, 8);
   const door = (x0, x1, y, dir) => {
     const L = x1 - x0, dg = el('g', { 'data-info': 'porte' }, g);
     el('line', { x1: x0, y1: y, x2: x0, y2: y + dir * L, stroke: '#6c5038', 'stroke-width': 3 }, dg);
     el('path', { d: `M${x0} ${y + dir * L} A${L} ${L} 0 0 ${dir > 0 ? 0 : 1} ${x1} ${y}`, fill: 'none', stroke: '#8d8270', 'stroke-width': 1.2, 'stroke-dasharray': '4 4' }, dg);
   };
   PL.rooms.slice(1).forEach(r => door(r.door[0], r.door[1], PL.HY0, -1));
-  door(PL.rooms[0].door[0], PL.rooms[0].door[1], PL.HY1, 1); door(1000, 1050, PL.HY1, 1); door(1170, 1222, PL.HY1, 1);
-  // murs extérieurs, fenêtres et porte d'entrée
+  door(PL.rooms[0].door[0], PL.rooms[0].door[1], PL.HY1, 1); door(800, 850, PL.HY1, 1);
   R(PL.X0, PL.Y0, PL.X1 - PL.X0, PL.Y1 - PL.Y0, { fill: 'none', stroke: W, 'stroke-width': 16 }, g);
   const win = (x, y, w, h) => { R(x, y, w, h, { fill: '#f7fbfd', stroke: W, 'stroke-width': 1.5 }, g); el('line', { x1: x + (w > h ? 0 : w / 2), y1: y + (w > h ? h / 2 : 0), x2: x + (w > h ? w : w / 2), y2: y + (w > h ? h / 2 : h), stroke: '#7db5d6', 'stroke-width': 2 }, g); };
-  [[320, 140], [690, 140], [1080, 160]].forEach(([x, w]) => win(x, PL.Y0 - 8, w, 16));
-  win(PL.X1 - 8, 180, 16, 140);
-  [[320, 200], [640, 120]].forEach(([x, w]) => win(x, PL.Y1 - 8, w, 16));
-  win(1030, PL.Y1 - 8, 70, 16);
-  R(PL.X0 - 9, 438, 18, 64, { fill: '#e6e1d8' }, g);
-  el('line', { x1: PL.X0, y1: 438, x2: PL.X0 + 64, y2: 438, stroke: '#6c5038', 'stroke-width': 3 }, g);
-  el('path', { d: `M${PL.X0 + 64} 438 A64 64 0 0 1 ${PL.X0} 502`, fill: 'none', stroke: '#8d8270', 'stroke-width': 1.2, 'stroke-dasharray': '4 4' }, g);
-  // noms des pièces annexes
-  [['Couloir', 470, 448], ['Salle de bain', 1060, 610], ['Cellier', 1262, 782]].forEach(([t, x, y]) => el('text', { x, y, 'text-anchor': 'middle', class: 'pname small', text: t }, g));
+  [[300, 130], [588, 130], [900, 200]].forEach(([x, w]) => win(x, PL.Y0 - 8, w, 16));
+  win(PL.X1 - 8, 150, 16, 120);
+  [[300, 150], [520, 150]].forEach(([x, w]) => win(x, PL.Y1 - 8, w, 16));
+  win(PL.X0 - 8, 520, 16, 150); win(830, PL.Y1 - 8, 70, 16);
+  // porte d’entrée
+  R(1100, PL.Y1 - 9, 72, 18, { fill: '#e6e1d8' }, g);
+  el('line', { x1: 1100, y1: PL.Y1, x2: 1100, y2: PL.Y1 - 72, stroke: '#6c5038', 'stroke-width': 3 }, g);
+  el('path', { d: `M1100 ${PL.Y1 - 72} A72 72 0 0 1 1172 ${PL.Y1}`, fill: 'none', stroke: '#8d8270', 'stroke-width': 1.2, 'stroke-dasharray': '4 4' }, g);
+  [['Couloir', 380, 384], ['Salle de bain', 872, 560], ['Entrée', 1124, 600]].forEach(([t, x, y]) => el('text', { x, y, 'text-anchor': 'middle', class: 'pname small', text: t }, g));
 }
-function duct(d, w, kind, open, info) {
+function duct(d, w, kind, open, info, warn) {
   const gg = el('g', { 'data-info': info }, layers.units);
-  const dark = kind === 'rep' ? '#9c8f78' : '#8d969e', fill = kind === 'rep' ? '#d9ccb4' : open ? '#d5dadf' : '#b8bcbf';
-  el('path', { d, fill: 'none', stroke: dark, 'stroke-width': w + 2.5, 'stroke-linejoin': 'round' }, gg);
-  el('path', { d, fill: 'none', stroke: fill, 'stroke-width': w, 'stroke-linejoin': 'round' }, gg);
-  el('path', { d, fill: 'none', stroke: kind === 'rep' ? '#c7b9a0' : '#c1c7cc', 'stroke-width': w - 3, 'stroke-dasharray': '1.2 9' }, gg);
-  return gg;
+  const dark = warn ? '#c43c2c' : kind === 'rep' ? '#9c8f78' : '#8d969e', fill = kind === 'rep' ? '#d9ccb4' : open ? '#d5dadf' : '#b8bcbf';
+  el('path', { d, fill: 'none', stroke: dark, 'stroke-width': w + 3, 'stroke-linecap': 'round' }, gg);
+  el('path', { d, fill: 'none', stroke: fill, 'stroke-width': w, 'stroke-linecap': 'round' }, gg);
+  const rings = el('path', { d, fill: 'none', stroke: kind === 'rep' ? '#c7b9a0' : '#c1c7cc', 'stroke-width': w - 3, 'stroke-dasharray': '1.2 9' }, gg);
+  return rings;
 }
 function planBouche(x, y, dir, open, g) {
   const bg = el('g', { 'data-info': 'bouche', opacity: open ? 1 : 0.55 }, g);
@@ -692,109 +690,132 @@ function planBouche(x, y, dir, open, g) {
   }
   if (!open) return;
   if (S.diff === 'rond') {
-    // diffusion en nappe tout autour
+    // diffusion en éventail, côté fenêtre
     for (let k = 0; k < 6; k++) {
-      const a = (dir < 0 ? -Math.PI : 0) + (k + 0.5) * Math.PI / 6 * (dir < 0 ? 1 : 1), b = a + 0.35 * (k % 2 ? 1 : -1), r1 = 22, r2 = 120 + (k % 3) * 22;
-      air(`M${x + Math.cos(a) * r1} ${y + Math.sin(a) * r1} Q${x + Math.cos(a) * r2 * 0.6} ${y + Math.sin(a) * r2 * 0.6} ${x + Math.cos(b) * r2} ${y + Math.sin(b) * r2}`, 'sup', 3);
+      const a = (dir < 0 ? -Math.PI : 0) + (k + 0.5) * Math.PI / 6, b = a + 0.3 * (k % 2 ? 1 : -1), r2 = 120 + (k % 3) * 24;
+      air(`M${x + Math.cos(a) * 22} ${y + Math.sin(a) * 22} Q${x + Math.cos(a) * r2 * 0.6} ${y + Math.sin(a) * r2 * 0.6} ${x + Math.cos(b) * r2} ${y + Math.sin(b) * r2}`, 'sup', 3);
     }
   } else {
     // jet dirigé vers la fenêtre
-    [-2, -1, 0, 1, 2].forEach(i => air(`M${x + i * 10} ${y + dir * 12} C${x + i * 14} ${y + dir * 90} ${x + i * 34} ${y + dir * 150} ${x + i * 48} ${y + dir * 205}`, 'sup', 3.4));
+    [-2, -1, 0, 1, 2].forEach(i => air(`M${x + i * 10} ${y + dir * 12} C${x + i * 13} ${y + dir * 80} ${x + i * 28} ${y + dir * 140} ${x + i * 40} ${y + dir * 200}`, 'sup', 3.4));
   }
 }
+// trajet d’une gaine souple, du plénum à la bouche
+function planRoute(j, k, b) {
+  const P0 = PL.plen, [x, y] = b;
+  if (j === 3) { const sx = P0.x + 20; return `M${sx} ${P0.y} C${sx} ${P0.y - 40} ${x - 120} ${y + 6} ${x} ${y}`; } // chambre 3 : passe au-dessus du gainable
+  if (j === 2) { const sx = P0.x + 8; return `M${sx} ${P0.y} C${sx} ${P0.y - 30} ${x} ${y + 40} ${x} ${y}`; }
+  if (j === 1) { const sy = P0.y + 8; return `M${P0.x} ${sy} C${P0.x - 120} ${sy} ${x} ${y + 50} ${x} ${y}`; }
+  const sy = P0.y + 34 + k * 20; return `M${P0.x} ${sy} C${P0.x - 90} ${sy} ${x} ${y - 70} ${x} ${y}`;
+}
 function planNetwork() {
-  const gd = layers.units, P0 = PL.plen, G0 = PL.gain, reprCouloir = S.reprise !== 'pieces';
-  // reprise
+  const gd = layers.units, P0 = PL.plen, G0 = PL.gain, F0 = PL.filt, reprCouloir = S.reprise !== 'pieces';
+  const back = [F0.x + F0.w, F0.y + F0.h / 2];
+  // ---- liaisons frigo et groupe extérieur (sur le côté du gainable)
+  const E = PL.ext, lx = G0.x + 60, ly = G0.y + G0.h;
+  const lg = el('g', { 'data-info': 'liaison' }, gd);
+  [[0, 5, 'k-gas', 'd-h'], [9, 3.6, 'k-lb', 'd-c']].forEach(([o, w, k, dd]) => tube(lg, P([[lx + o, ly], [lx + o, ly + 18 + o], [E.x + 40 + o, ly + 18 + o], [E.x + 40 + o, E.y]]), k, dd, w));
+  const cg = el('g', { 'data-info': 'interco' }, gd);
+  el('path', { d: P([[lx + 18, ly], [lx + 18, ly + 36], [E.x + 62, ly + 36], [E.x + 62, E.y]]), class: 'cable' }, cg);
+  hs('liaison', E.x + 44, 640, 1110, 700);
+  const og = el('g', { 'data-info': 'groupe' }, gd);
+  R(E.x, E.y, E.w, E.h, { rx: 4, fill: 'url(#gMetal)', stroke: '#6f7981', 'stroke-width': 1.5 }, og);
+  for (let i = 1; i < 12; i++) el('line', { x1: E.x + i * 10, y1: E.y + 6, x2: E.x + i * 10, y2: E.y + E.h - 6, stroke: '#c4cacf' }, og);
+  R(E.x + 8, E.y - 6, E.w - 16, 6, { fill: '#8f8a80' }, og);
+  [-30, 0, 30].forEach((o, i) => air(`M${E.x + E.w / 2 + o} ${E.y + E.h + 8} C${E.x + E.w / 2 + o} ${E.y + E.h + 30} ${E.x + E.w / 2 + o * 1.6} ${E.y + E.h + 44} ${E.x + E.w / 2 + o * 2.2} ${E.y + E.h + 70}`, 'oair', 4 + (i % 2)));
+  el('text', { x: E.x - 10, y: E.y + 30, 'text-anchor': 'end', class: 'pname small', text: 'Groupe extérieur' }, layers.over);
+  // ---- reprise filtrante, à l’arrière du gainable
+  const filtre = (x, y, w, h, g) => {
+    R(x, y, w, h, { fill: '#fff', stroke: '#6f7981', 'stroke-width': 1.5 }, g);
+    R(x + 4, y + 4, w - 8, h - 8, { fill: 'url(#filtre)', stroke: '#b3a37c' }, g);
+  };
   if (reprCouloir) {
-    const c = PL.grilleCouloir, cx = c.x + c.w / 2;
-    duct(P([[cx, c.y + c.h], [cx, G0.y + 30], [G0.x + G0.w, G0.y + 30]]), 22, 'rep', true, 'reprise');
-    const gr = el('g', { 'data-info': 'reprise' }, gd);
-    R(c.x, c.y, c.w, c.h, { fill: '#fff', stroke: '#6f7981', 'stroke-width': 1.5 }, gr);
-    for (let i = 1; i < 9; i++) el('line', { x1: c.x + 3, y1: c.y + i * 8, x2: c.x + c.w - 3, y2: c.y + i * 8, stroke: '#9aa3ab' }, gr);
-    hs('reprise', cx, c.y + 20, 1376, 450);
-    // l'air revient de chaque pièce par le jour sous la porte, puis par le couloir
+    const c = PL.grilleCouloir;
+    duct(P([[c.x, c.y + c.h / 2], back]), 18, 'rep', true, 'reprise');
+    filtre(c.x, c.y, c.w, c.h, el('g', { 'data-info': 'reprise' }, gd));
+    hs('reprise', c.x + c.w / 2, c.y + 10, 960, 270);
     PL.rooms.forEach((r, j) => {
       if (!zoneOpen(j)) return;
-      const dx = (r.door[0] + r.door[1]) / 2, inRoom = r.dir < 0 ? PL.HY0 - 30 : PL.HY1 + 30, out = r.dir < 0 ? PL.HY0 + 18 : PL.HY1 - 18;
-      const sx = r.x + r.w * 0.5, sy = r.y + r.h * 0.5, ly = 465 + (j - 1.5) * 8;
-      air(`M${sx} ${sy} Q${dx} ${sy} ${dx} ${inRoom} L${dx} ${out} Q${dx} ${ly} ${dx + 30} ${ly} L${c.x - 6} ${ly}`, 'ret', 3);
+      const dx = (r.door[0] + r.door[1]) / 2, inRoom = r.dir < 0 ? PL.HY0 - 30 : PL.HY1 + 30, out = r.dir < 0 ? PL.HY0 + 14 : PL.HY1 - 14;
+      const sx = r.x + r.w * 0.5, sy = r.y + r.h * (r.dir < 0 ? 0.35 : 0.65), cy = c.y + c.h / 2 + (j - 1.5) * 6;
+      air(`M${sx} ${sy} Q${dx} ${sy} ${dx} ${inRoom} L${dx} ${out} Q${dx} ${cy} ${dx + (c.x > dx ? 30 : -30)} ${cy} L${c.x + (c.x > dx ? -4 : c.w + 4)} ${cy}`, 'ret', 3);
       const dg = el('g', { 'data-info': 'detalon' }, layers.over), yy = r.dir < 0 ? PL.HY0 : PL.HY1;
       R(r.door[0] + 6, yy - 3, r.door[1] - r.door[0] - 12, 6, { fill: '#e2a417', rx: 2 }, dg);
-      if (j === 2) hs('detalon', dx, yy, 820, 300);
+      if (j === 2) hs('detalon', dx, yy, 600, 380);
     });
   } else {
-    const T = PL.trunk, xs = PL.rooms.map(r => r.rep[0]);
-    duct(P([[Math.min(...xs), T], [1338, T], [1338, G0.y + 30], [G0.x + G0.w, G0.y + 30]]), 18, 'rep', true, 'reprise');
     PL.rooms.forEach((r, j) => {
       const [x, y] = r.rep;
-      duct(P([[x, y], [x, T]]), 14, 'rep', true, 'reprise');
-      const gr = el('g', { 'data-info': 'reprise' }, gd);
-      R(x - 22, y - 12, 44, 24, { fill: '#fff', stroke: '#6f7981', 'stroke-width': 1.5 }, gr);
-      for (let i = 1; i < 6; i++) el('line', { x1: x - 22 + i * 7.3, y1: y - 10, x2: x - 22 + i * 7.3, y2: y + 10, stroke: '#9aa3ab' }, gr);
-      if (zoneOpen(j)) [-1, 1].forEach(sd => {
-        const sx = r.x + r.w * (0.5 + sd * 0.22), sy = r.y + r.h * 0.5;
-        air(`M${sx} ${sy} Q${x + sd * 40} ${sy} ${x + sd * 8} ${y + (r.dir < 0 ? -14 : 14)}`, 'ret', 3);
+      duct(`M${x} ${y} C${x} ${y + (r.dir < 0 ? 60 : -60)} ${back[0] + 80} ${back[1]} ${back[0]} ${back[1]}`, 13, 'rep', true, 'reprise');
+      filtre(x - 22, y - 13, 44, 26, el('g', { 'data-info': 'reprise' }, gd));
+      if (zoneOpen(j)) [0, 1].forEach(i => {
+        const sx = r.x + r.w * (0.35 + i * 0.3), sy = r.y + r.h * (r.dir < 0 ? 0.25 : 0.75);
+        air(`M${sx} ${sy} Q${x} ${sy} ${x + (i ? 8 : -8)} ${y - r.dir * 16}`, 'ret', 3);
       });
-      if (j === 2) hs('reprise', x, y, 1376, 450);
+      if (j === 2) hs('reprise', x, y, 960, 270);
     });
   }
-  // soufflage : une gaine par zone, du plénum jusqu'aux bouches
+  // ---- soufflage : une gaine par bouche, du plénum vers les pièces
   PL.rooms.forEach((r, j) => {
-    const open = zoneOpen(j), ly = r.lane, w = j === 0 ? 15 : 13;
-    const xs = r.bouches.map(b => b[0]), far = Math.min(...xs);
-    const main = P([[r.ox, P0.y], [r.ox, ly], [far, ly], [far, r.bouches.find(b => b[0] === far)[1]]]);
-    duct(main, w, 'sup', open, 'gaine');
-    r.bouches.filter(b => b[0] !== far).forEach(b => duct(P([[b[0], ly], [b[0], b[1]]]), w - 2, 'sup', open, 'gaine'));
-    if (open) {
-      el('path', { d: main, class: 'air sup', 'stroke-width': 2.6, style: 'opacity:.9' }, layers.air);
-      r.bouches.filter(b => b[0] !== far).forEach(b => el('path', { d: P([[b[0], ly], [b[0], b[1]]]), class: 'air sup', 'stroke-width': 2.4, style: 'opacity:.9' }, layers.air));
-    }
+    const open = zoneOpen(j), list = roomDucts(r, j);
+    list.forEach(([D, b], k) => {
+      const d = planRoute(j, k, b), w = D === 200 ? 16 : 13;
+      const under = j === 0 && S.salonD === '160';
+      const rings = duct(d, w, 'sup', open, 'diametre', under);
+      if (open) el('path', { d, class: 'air sup', 'stroke-width': 2.4, style: `opacity:.9${under ? ';animation-duration:2.2s' : ''}` }, layers.air);
+      // étiquette du diamètre au milieu de la gaine
+      const L = rings.getTotalLength(), m = rings.getPointAtLength(L * (j === 3 ? 0.62 : 0.5));
+      const tg = el('g', { 'data-info': 'diametre' }, layers.over);
+      R(m.x - 24, m.y - 11, 48, 21, { rx: 3, fill: under ? '#c43c2c' : '#fff', stroke: under ? '#c43c2c' : '#8d969e' }, tg);
+      el('text', { x: m.x, y: m.y + 5, 'text-anchor': 'middle', class: 'pdiam' + (under ? ' warn' : ''), text: 'Ø' + D }, tg);
+      if (j === 0 && k === 0) hs('diametre', m.x, m.y, 330, 700);
+    });
     const keep = layers.air; layers.air = el('g', { 'clip-path': `url(#clipR${j})` }, keep);
-    r.bouches.forEach(([x, y]) => planBouche(x, y, r.dir, open, layers.units));
+    list.forEach(([D, b]) => planBouche(b[0], b[1], r.dir, open, layers.units));
     layers.air = keep;
     if (S.zoning) {
-      const rg = el('g', { 'data-info': 'registre' }, layers.over), ry = P0.y - 16;
-      el('circle', { cx: r.ox, cy: ry, r: 8, fill: '#fff', stroke: '#39434c', 'stroke-width': 1.5 }, rg);
-      el('line', { x1: r.ox - 6, y1: ry, x2: r.ox + 6, y2: ry, stroke: open ? '#1f8a4d' : '#c43c2c', 'stroke-width': 3, 'stroke-linecap': 'round', transform: open ? '' : `rotate(90 ${r.ox} ${ry})` }, rg);
-      if (j === 3) hs('registre', r.ox, ry, 1376, 540);
+      const rg = el('g', { 'data-info': 'registre' }, layers.over), p0 = planRoute(j, 0, list[0][1]).match(/M([\d.]+) ([\d.]+)/);
+      const rx = +p0[1] - (j <= 1 ? 12 : 0), ry = +p0[2] - (j >= 2 ? 12 : 0);
+      el('circle', { cx: rx, cy: ry, r: 7.5, fill: '#fff', stroke: '#39434c', 'stroke-width': 1.5 }, rg);
+      el('line', { x1: rx - 5.5, y1: ry, x2: rx + 5.5, y2: ry, stroke: open ? '#1f8a4d' : '#c43c2c', 'stroke-width': 3, 'stroke-linecap': 'round', transform: open ? '' : `rotate(90 ${rx} ${ry})` }, rg);
+      if (j === 1) hs('registre', rx, ry, 470, 400);
     }
   });
-  hs('gaine', 700, PL.rooms[2].lane, 600, 62);
-  hs('bouche', PL.rooms[2].bouches[0][0], PL.rooms[2].bouches[0][1], 560, 258);
-  // plénum et gainable
+  hs('bouche', PL.rooms[2].x + 78, 290, 640, 236);
+  // ---- plénum, gainable, caisson filtre
   const pl = el('g', { 'data-info': 'plenum' }, gd);
   R(P0.x, P0.y, P0.w, P0.h, { fill: '#c3c9ce', stroke: '#6f7981', 'stroke-width': 1.5, rx: 2 }, pl);
-  hs('plenum', P0.x + P0.w / 2, P0.y + 15, 1376, 610);
+  hs('plenum', P0.x + 8, P0.y + P0.h - 6, 560, 540);
   const ug = el('g', { 'data-info': 'u-gainable' }, gd);
-  R(G0.x, G0.y, G0.w, G0.h, { fill: 'url(#gBody)', stroke: '#6f7981', 'stroke-width': 1.5, rx: 4 }, ug);
-  el('text', { x: G0.x + G0.w / 2, y: G0.y + 36, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 700, fill: '#5d6871', text: 'GAINABLE' }, ug);
-  hs('u-gainable', G0.x + G0.w / 2, G0.y + G0.h / 2, 1376, 690, false, 90);
-  // liaisons vers le groupe extérieur
-  const lg = el('g', { 'data-info': 'liaison' }, gd);
-  [[G0.x + 14, 5], [G0.x + 26, 3.4]].forEach(([x, w], i) => tube(lg, P([[x, G0.y + G0.h], [x, PL.Y1 + 40]]), i ? 'k-lb' : 'k-gas', i ? 'd-c' : 'd-h', w));
-  el('text', { x: G0.x + 20, y: PL.Y1 + 60, 'text-anchor': 'middle', class: 'pname small', text: 'Vers le groupe extérieur' }, layers.over);
-  // débit total
-  const tot = PL.rooms.reduce((n, r, j) => n + (zoneOpen(j) ? planDebit(r).q : 0), 0);
+  R(G0.x, G0.y, G0.w, G0.h, { fill: 'url(#gBody)', stroke: '#6f7981', 'stroke-width': 1.5, rx: 3 }, ug);
+  el('text', { x: G0.x + G0.w / 2, y: G0.y + 27, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: '#5d6871', text: 'GAINABLE' }, ug);
+  hs('u-gainable', G0.x + G0.w / 2, G0.y + G0.h - 6, 790, 476, false, 80);
+  filtre(F0.x, F0.y, F0.w, F0.h, el('g', { 'data-info': 'reprise' }, gd));
+  // ---- débit total
+  const tot = PL.rooms.reduce((n, r, j) => n + (zoneOpen(j) ? planQ(r) : 0), 0);
   const tg = el('g', { 'data-info': 'debit' }, layers.anno);
   el('text', { x: PL.X1, y: PL.Y0 - 24, 'text-anchor': 'end', class: 'ptitle pq', text: `Débit total du gainable : ${fmtN(tot)} m³/h` }, tg);
 }
 function planRoomsInfo() {
   PL.rooms.forEach((r, j) => {
-    const open = zoneOpen(j), { m2, q } = planDebit(r);
-    const top = r.dir < 0, tx = r.x + r.w - 22, ty = top ? r.y + 40 : r.y + r.h - 52;
+    const open = zoneOpen(j), q = planQ(r), top = r.dir < 0;
+    const end = j === 0, tx = end ? r.x + r.w - 16 : r.x + 16, ty = top ? r.y + 34 : r.y + r.h - 78, an = end ? 'end' : 'start';
     const ig = el('g', { 'data-info': 'debit' }, layers.over);
-    el('text', { x: tx, y: ty, 'text-anchor': 'end', class: 'pname', text: r.name }, ig);
-    el('text', { x: tx, y: ty + 24, 'text-anchor': 'end', class: 'pq' + (open ? '' : ' off'), text: `${m2.toFixed(1).replace('.', ',')} m² · ${open ? fmtN(q) + ' m³/h' : 'zone fermée'}` }, ig);
-    // thermostat
+    el('text', { x: tx, y: ty, 'text-anchor': an, class: 'pname', text: `${r.name} · ${r.m2} m²` }, ig);
+    el('text', { x: tx, y: ty + 22, 'text-anchor': an, class: 'pq' + (open ? '' : ' off'), text: open ? `${r.m2} × 2,5 × 5 = ${fmtN(q)} m³/h` : 'zone fermée' }, ig);
+    if (j === 0) {
+      const ok = S.salonD !== '160', capa = S.salonD === '2x160' ? '2 × 300 = 600' : S.salonD === '200' ? '450' : '300';
+      el('text', { x: tx, y: ty + 44, 'text-anchor': an, class: 'pq small' + (ok ? '' : ' warn'), text: `Gaines : ${capa} m³/h max ${ok ? '✓ suffisant' : '✗ trop petit'}` }, ig);
+    }
     const [x, y] = r.th, g = el('g', { class: 'thermo' + (open ? '' : ' closed') }, layers.over);
     if (S.zoning) g.setAttribute('data-zone', j); else g.setAttribute('data-info', 'thermostat');
     R(x, y, 76, 32, { rx: 4 }, g);
     el('text', { x: x + 38, y: y + 22, id: 't' + j }, g);
-    if (j === 1) hs('thermostat', x + 38, y + 30, 270, 62);
+    if (j === 3) hs('thermostat', x + 38, y + 30, 1120, 80);
   });
 }
 function buildPlan() {
-  svg.setAttribute('viewBox', '190 40 1390 860');
+  svg.setAttribute('viewBox', '236 64 1110 880');
   rooms = PL.rooms.map((r, j) => ({ name: r.name, x: r.x, w: r.w, c: j, ceil: r.y, floor: r.y + r.h }));
   while (S.zones.length < 4) S.zones.push(true);
   L = { gm: true, plan: true, single: false, s: 1, cols: 4 };
@@ -803,6 +824,8 @@ function buildPlan() {
   const bg = el('g', {}, svg);
   layers.defs = el('defs', {}, svg);
   defs();
+  const fp = el('pattern', { id: 'filtre', width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, layers.defs);
+  R(0, 0, 6, 6, { fill: '#f1e7c9' }, fp); el('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: '#c9b27a', 'stroke-width': 2 }, fp);
   ['build', 'tint', 'furn', 'pipes', 'insul', 'out', 'units', 'gou', 'air', 'over', 'anno', 'labels', 'spot'].forEach(k => layers[k] = el('g', {}, svg));
   planGround(bg);
   planFloors(layers.build);
@@ -810,7 +833,7 @@ function buildPlan() {
   planWalls(layers.furn);
   planNetwork();
   planRoomsInfo();
-  el('text', { x: PL.X0, y: PL.Y0 - 24, class: 'ptitle', text: 'Vue de dessus · gaines dans le faux plafond' }, layers.anno);
+  el('text', { x: PL.X0, y: PL.Y0 - 24, class: 'ptitle', text: 'Vue de dessus · gainable et gaines dans les combles' }, layers.anno);
   drawLabels();
   refresh();
   if (spotId) { spotCur = { x: 800, y: 450, r: 2600 }; spot(spotId); }
@@ -870,7 +893,8 @@ function tick() {
   set += cool ? pen : -pen;
   rooms.forEach((r, i) => {
     const served = S.power && !S.def && (!(L.gm && S.zoning) || S.zones[r.c]);
-    const target = served ? set : amb;
+    const under = L.plan && r.c === 0 && S.salonD === '160' ? (cool ? 2.5 : -2.5) : 0; // gaine trop petite : consigne non atteinte
+    const target = served ? set + under : amb;
     temps[i] += (target - temps[i]) * (served ? 0.05 : 0.025);
   });
   paintTemps();

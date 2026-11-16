@@ -344,3 +344,7 @@ stop{transition:stop-color 1.2s ease}
 #scene .pq.off{fill:#8b8f93}
 #scene .ptitle{font-size:20px;font-weight:700;fill:#1d2831}
 .lab .ptitle{display:none}
+#scene .pq.small{font-size:14px;fill:#1f8a4d}
+#scene .pq.warn{fill:#c43c2c}
+#scene .pdiam{font-size:13px;font-weight:700;fill:#39434c}
+#scene .pdiam.warn{fill:#fff}
