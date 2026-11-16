@@ -45,27 +45,7 @@ function hs(id, x, y, lx, ly, xr, r) {
   hot[id] = { x, y, r: r || 62 };
   if (lx != null) labs.push({ id, x, y, lx, ly, xr });
 }
-// Flux d'air : des filets qui glissent tout le long du trajet, apparaissent et s'effacent en fondu
-const SPEED = { sup: 95, ret: 58, oair: 110 };
-function streaks(d, cls, w, parent, noHalo) {
-  if (!noHalo) el('path', { d, class: 'air halo ' + cls, 'stroke-width': w * 3 }, parent);
-  const probe = el('path', { d }, parent), L = probe.getTotalLength(); probe.remove();
-  const kind = cls.split(' ')[0], seg = kind === 'ret' ? 16 : 30;
-  const dur = Math.max(900, (L + seg) / (SPEED[kind] || 95) * 1000);
-  const n = Math.max(2, Math.round(L / (kind === 'ret' ? 60 : 85)));
-  let last;
-  for (let i = 0; i < n; i++) {
-    last = el('path', { d, class: 'air streak ' + cls, 'stroke-width': w, style: `stroke-dasharray:${seg} ${L + seg}` }, parent);
-    last.animate([
-      { strokeDashoffset: seg, strokeOpacity: 0 },
-      { strokeOpacity: 1, offset: 0.18 },
-      { strokeOpacity: 1, offset: 0.78 },
-      { strokeDashoffset: -L, strokeOpacity: 0 }
-    ], { duration: dur, iterations: Infinity, delay: -dur * i / n - Math.random() * dur / n * 0.3 });
-  }
-  return last;
-}
-const air = (d, cls, w) => streaks(d, cls, w || 4, layers.air);
+const air = (d, cls, w) => { el('path', { d, class: 'air halo ' + cls, 'stroke-width': (w || 4) * 3 }, layers.air); return el('path', { d, class: 'air ' + cls, 'stroke-width': w || 4 }, layers.air); };
 function defs() {
   const d = layers.defs;
   const lg = (id, stops, h) => { const g = el('linearGradient', { id, x1: 0, y1: 0, x2: h ? 1 : 0, y2: h ? 0 : 1 }, d); stops.forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, g)); };
@@ -296,7 +276,7 @@ function drawUnit(u, k) {
       el('path', { d, fill: 'none', stroke: '#8d969e', 'stroke-width': 13 * (s < 1 ? 0.9 : 1), 'stroke-linejoin': 'round' }, gg);
       el('path', { d, fill: 'none', stroke: open ? '#d5dadf' : '#b8bcbf', 'stroke-width': 10.5 * (s < 1 ? 0.9 : 1), 'stroke-linejoin': 'round' }, gg);
       el('path', { d, fill: 'none', stroke: '#9aa3ab', 'stroke-width': 10.5 * (s < 1 ? 0.9 : 1), 'stroke-dasharray': '1.5 7' }, gg);
-      if (open) streaks(d, 'sup', 3, gd, true);
+      if (open) el('path', { d, class: 'air sup', 'stroke-width': 3, style: 'opacity:.9' }, gd);
       if (zi === served.length - 1) hs('gaine', (bx + xd) / 2 + 40, by, (bx + xd) / 2, r.ceil + 190 * s);
       if (L.gm && S.zoning) {
         const rg = el('g', { 'data-info': 'registre' }, gd), rx = bx + 24 * s + 16;

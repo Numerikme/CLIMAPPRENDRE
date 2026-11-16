@@ -193,7 +193,6 @@ stop{transition:stop-color 1.2s ease}
 .heatwave{fill:none;stroke:#e5482c;stroke-width:3;stroke-linecap:round;stroke-dasharray:8 14;animation:af2 1.2s linear infinite reverse;opacity:.8}
 
 .air.halo{opacity:.09!important;stroke-dasharray:none;animation:none}
-.air.streak{animation:none}
 .ret.halo{display:none}
 /* Arrêt */
 .off .air,.off .tb-flow,.off .pulse,.off .drops,.off .drip{opacity:0!important}
