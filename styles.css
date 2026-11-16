@@ -142,18 +142,18 @@ body.heat .stage{background:linear-gradient(#b9c4ce 50%,#eef2f5 50%)}
 .tb-case{stroke:#2b3640}
 .tb{transition:stroke 1.2s ease}
 .k-dis{stroke:var(--hpg)}.k-suc{stroke:var(--bpg)}
-.cool .k-cl{stroke:var(--hpg)}.heat .k-cl{stroke:var(--bpg)}
-.cool .k-la{stroke:var(--hpl)}.heat .k-la{stroke:var(--bpm)}
-.cool .k-lb{stroke:var(--bpm)}.heat .k-lb{stroke:var(--hpl)}
-.cool .k-gas{stroke:var(--bpg)}.heat .k-gas{stroke:var(--hpg)}
+#scene.cool .k-cl{stroke:var(--hpg)}#scene.heat .k-cl{stroke:var(--bpg)}
+#scene.cool .k-la{stroke:var(--hpl)}#scene.heat .k-la{stroke:var(--bpm)}
+#scene.cool .k-lb{stroke:var(--bpm)}#scene.heat .k-lb{stroke:var(--hpl)}
+#scene.cool .k-gas{stroke:var(--bpg)}#scene.heat .k-gas{stroke:var(--hpg)}
 stop{transition:stop-color 1.2s ease}
-.cool .st-ot{stop-color:var(--hpg)}.cool .st-ob{stop-color:var(--hpl)}
-.heat .st-ot{stop-color:var(--bpg)}.heat .st-ob{stop-color:var(--bpm)}
-.cool .st-il{stop-color:var(--bpm)}.cool .st-ig{stop-color:var(--bpg)}
-.heat .st-il{stop-color:var(--hpl)}.heat .st-ig{stop-color:var(--hpg)}
+#scene.cool .st-ot{stop-color:var(--hpg)}#scene.cool .st-ob{stop-color:var(--hpl)}
+#scene.heat .st-ot{stop-color:var(--bpg)}#scene.heat .st-ob{stop-color:var(--bpm)}
+#scene.cool .st-il{stop-color:var(--bpm)}#scene.cool .st-ig{stop-color:var(--bpg)}
+#scene.heat .st-il{stop-color:var(--hpl)}#scene.heat .st-ig{stop-color:var(--hpg)}
 .tb-flow{stroke:#fff;opacity:.7;stroke-dasharray:7 17;animation:fl .75s linear infinite}
 @keyframes fl{to{stroke-dashoffset:-24}}
-.heat .d-c,.cool .d-h{animation-direction:reverse}
+#scene.heat .d-c,#scene.cool .d-h{animation-direction:reverse}
 .insul-o{stroke:#a39c8f}.insul{stroke:#f4f1ea}
 .xhide{transition:opacity .7s ease}
 .xray .xhide{opacity:0;pointer-events:none}
@@ -167,7 +167,7 @@ stop{transition:stop-color 1.2s ease}
 .comp{animation:vib .12s linear infinite}
 @keyframes vib{50%{transform:translateY(.5px)}}
 .slider{transition:transform 1s cubic-bezier(.3,.9,.3,1)}
-.heat .slider{transform:translateX(-20px)}
+#scene.heat .slider{transform:translateX(-20px)}
 .gou{fill:#f5f3ee;stroke:#aaa497;stroke-width:1.2;transition:opacity .7s ease}
 .xray .gou{opacity:.16}
 .cable{stroke:#2a2f35;stroke-width:2.4}
@@ -185,8 +185,8 @@ stop{transition:stop-color 1.2s ease}
 /* Air */
 .air{stroke-dasharray:22 34;animation:af 1.05s linear infinite;opacity:.72;transition:stroke 1.2s ease,opacity .6s ease}
 @keyframes af{to{stroke-dashoffset:-56}}
-.cool .sup{stroke:#2f9be8}.heat .sup{stroke:#f0692a}
-.cool .ret{stroke:#eda071}.heat .ret{stroke:#86b4e2}
+#scene.cool .sup{stroke:#2f9be8}#scene.heat .sup{stroke:#f0692a}
+#scene.cool .ret{stroke:#eda071}#scene.heat .ret{stroke:#86b4e2}
 .ret{opacity:.5;stroke-dasharray:10 22;animation-name:af2}
 @keyframes af2{to{stroke-dashoffset:-32}}
 .summer .oair{stroke:#ef5a30}.winter .oair{stroke:#49a6ea}
@@ -210,6 +210,7 @@ stop{transition:stop-color 1.2s ease}
 .steam{opacity:0;fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;stroke-dasharray:14 18;animation:af2 1.4s linear infinite reverse;transition:opacity .8s}
 .defrosting .steam{opacity:.9}
 .defrosting .air{opacity:0!important}
+.defrosting .tb-flow{animation-duration:.4s;opacity:.95}
 .defrosting .blades,.defrosting .topfan{animation-play-state:paused}
 .defrosting .mdrip{opacity:1}
 .mdrip{opacity:0;animation:dripf 1s ease-in infinite}

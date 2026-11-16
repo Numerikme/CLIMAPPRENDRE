@@ -77,7 +77,7 @@ $$('.tabs button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 
 function setMode(m) {
   if (S.mode === m) return;
-  S.mode = m; S.def = null; clearTimeout(defT); status('');
+  S.mode = m; S.def = null; endDef();
   if (m === 'heat' && S.fault === 'pente') S.fault = null;
   C.resetTemps(); C.refresh(); sync(); showHome(); renderFaults();
 }
@@ -146,14 +146,32 @@ function renderFaults() {
   });
   $('#bDef').onclick = defrost;
 }
+// Dégivrage mis en scène : Rayon X allumé le temps de la démo, projecteur sur la vanne puis l’échangeur
+let defX = null;
 function defrost() {
   if (S.mode !== 'heat') setMode('heat');
   S.power = true; S.fault = null; clearTimeout(defT);
-  S.def = 'frost'; C.refresh(); sync(); renderFaults(); status('Le givre se forme sur l’échangeur extérieur…');
+  if (defX === null) defX = S.xray;
+  S.xray = true;
+  S.def = 'frost'; C.refresh(); sync(); renderFaults(); C.spot('echext');
+  status('1/4 · Mode chaud : l’échangeur extérieur est glacé, le givre se forme');
   defT = setTimeout(() => {
-    S.def = 'defrost'; C.refresh(); status('Dégivrage : le cycle s’inverse, le gaz chaud fait fondre le givre');
-    defT = setTimeout(() => { S.def = null; C.refresh(); status('Le chauffage reprend'); defT = setTimeout(() => status(''), 2200); }, 5500);
-  }, 3600);
+    S.def = 'defrost'; C.refresh(); C.spot('v4v');
+    status('2/4 · La vanne 4 voies bascule : le cycle s’inverse, comme en mode froid');
+    defT = setTimeout(() => {
+      C.spot('echext');
+      status('3/4 · Le gaz chaud (en rouge) part dehors et fait fondre le givre. Ventilateurs à l’arrêt');
+      defT = setTimeout(() => {
+        S.def = null; C.refresh(); C.spot('v4v');
+        status('4/4 · La vanne rebascule : le chauffage reprend');
+        defT = setTimeout(endDef, 2800);
+      }, 5200);
+    }, 2600);
+  }, 4200);
+}
+function endDef() {
+  clearTimeout(defT); status(''); C.spot(null);
+  if (defX !== null) { S.xray = defX; defX = null; C.refresh(); sync(); }
 }
 
 /* ---------- Dimensionnement ---------- */
@@ -236,7 +254,7 @@ function tourGo(i) {
   C.spot(s[0]);
 }
 function closeDock() { ti = -1; quiz.on = false; quiz.find = null; S.quizfind = false; C.spot(null); C.refresh(); dock(false); endQuiz(); }
-const stopDef = () => { S.def = null; clearTimeout(defT); status(''); };
+const stopDef = () => { S.def = null; endDef(); };
 $('#bT').onclick = () => { stopDef(); endQuiz(); dock(true); tourGo(0); };
 $('#dockClose').onclick = closeDock;
 $('#dockPrev').onclick = () => { if (!quiz.on && ti > 0) tourGo(ti - 1); };
