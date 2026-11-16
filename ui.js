@@ -28,6 +28,9 @@ const INFO = {
   reprise: ['Grille de reprise', 'L’air de la pièce repart vers le gainable par cette grille, à travers un filtre. Il est traité puis renvoyé dans les gaines.', 'Ce que l’on souffle, il faut pouvoir le reprendre. Reprise dans le couloir ou centralisée : les portes doivent être détalonnées pour laisser l’air revenir.'],
   refnet: ['Refnet', 'Sur un VRF, un seul réseau de tubes part du groupe et dessert les unités les unes après les autres, en série. À chaque unité, un refnet (raccord en Y) prélève ce dont elle a besoin et laisse passer le reste vers la suivante. Autre montage possible : un répartiteur par niveau, d’où part une liaison vers chaque unité.', 'Multi-split : une liaison par unité. VRF : un réseau commun et des refnets. La dernière unité de la ligne n’en a pas besoin.'],
   detalon: ['Détalonnage des portes', 'Quand la reprise est centralisée ou placée dans le couloir, l’air soufflé dans chaque pièce doit pouvoir revenir jusqu’à la grille, même porte fermée. On laisse donc un jour sous les portes : c’est le détalonnage.', 'Sans détalonnage, la pièce se met en surpression : le débit chute, la porte siffle et la température n’est pas atteinte.'],
+  plan: ['Focus gainable', 'Une seule machine cachée dans le faux plafond du cellier traite le salon et les trois chambres. Le plénum répartit l’air dans une gaine par pièce ; chaque gaine finit sur une bouche de soufflage. L’air revient au gainable par la reprise.', 'Changez le type de bouche, le zoning et la reprise à gauche. Cliquez sur un thermostat pour fermer une zone.'],
+  debit: ['Débit d’air par pièce', 'Chaque pièce reçoit un débit adapté à son volume : surface × hauteur sous plafond (2,5 m) × 5 brassages par heure. Une chambre de 20 m² : 20 × 2,5 × 5 = 250 m³/h.', 'Quand une zone est fermée, le gainable réduit sa ventilation : le débit total baisse, les autres pièces gardent leur débit.'],
+  porte: ['Porte', 'Vue de dessus, l’arc en pointillés montre l’ouverture de la porte.', 'Avec une reprise dans le couloir, l’air de la pièce repasse sous la porte : il faut la détalonner.'],
   'u-mural': ['Unité murale', 'La plus courante. Fixée en haut du mur, elle aspire l’air par le dessus et le souffle par le bas.', 'Simple et économique. Une unité par pièce.'],
   'u-cassette': ['Cassette', 'Encastrée dans le faux plafond, seule sa façade est visible. Elle souffle sur les côtés et reprend l’air au centre.', 'Idéale pour les bureaux et commerces. Pompe de relevage intégrée.'],
   'u-plafonnier': ['Plafonnier', 'Fixé sous le plafond, il souffle l’air à l’horizontale sur une grande portée.', 'Pour les grandes pièces sans faux plafond.'],
@@ -87,13 +90,14 @@ let sel = -1;
 function sync() {
   document.body.classList.toggle('heat', S.mode === 'heat');
   $$('.modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
-  const cur = { sys: S.sys, type: sel >= 0 ? S.types[sel] : S.types[0], support: S.sys === 'vrf' ? 'sol' : S.support, drain: S.drain, diff: S.diff, zoning: S.zoning ? '1' : '0', power: S.power ? '1' : '0' };
+  const cur = { sys: S.sys, type: sel >= 0 ? S.types[sel] : S.types[0], support: S.sys === 'vrf' ? 'sol' : S.support, drain: S.drain, diff: S.diff, reprise: S.reprise, zoning: S.zoning ? '1' : '0', power: S.power ? '1' : '0' };
   $$('.seg').forEach(seg => [...seg.children].forEach(b => b.classList.toggle('on', b.dataset.val === cur[seg.dataset.set])));
   $('[data-set=support] [data-val=mural]').disabled = S.sys === 'vrf';
   $('#bX').classList.toggle('on', S.xray); $('#bL').classList.toggle('on', S.labels);
   $('#legend').classList.toggle('show', S.xray && $('#dock').hidden);
-  const gain = S.types.includes('gainable'), gm = S.sys === 'mono' && gain;
-  $('#secGain').hidden = !gain; $('#segZone').hidden = !gm; $('#zoneHint').hidden = !(gm && S.zoning);
+  const pv = S.view === 'plan', gain = pv || S.types.includes('gainable'), gm = pv || (S.sys === 'mono' && gain);
+  $('#secGain').hidden = !gain; $('#segZone').hidden = !gm; $('#zoneHint').hidden = !(gm && S.zoning); $('#segRep').hidden = !pv;
+  document.body.classList.toggle('planview', pv); $('#bP').classList.toggle('on', pv);
   // choix de la pièce
   const n = C.unitCount(), w = $('#selWrap'); w.hidden = n < 2;
   if (n >= 2) {
@@ -114,8 +118,11 @@ $$('.seg').forEach(seg => seg.addEventListener('click', e => {
   C.build(); sync();
   if (k === 'sys') showHome();
   if (k === 'drain') showInfo(v === 'gravite' ? 'condensats' : 'pompe');
+  if (k === 'reprise') showInfo(v === 'couloir' ? 'detalon' : 'reprise');
   if (k === 'support') showInfo('support');
 }));
+function setView(v) { if (S.view === v) return; S.view = v; C.spot(null); C.build(); sync(); if (v === 'plan') showInfo('plan'); else showHome(); }
+$('#bP').onclick = () => { stopDef(); setView(S.view === 'plan' ? 'coupe' : 'plan'); };
 $('#bX').onclick = () => { S.xray = !S.xray; C.refresh(); sync(); };
 $('#bL').onclick = () => { S.labels = !S.labels; C.refresh(); sync(); };
 $('#bF').onclick = () => { document.body.classList.toggle('focus'); $('#bF').textContent = document.body.classList.contains('focus') ? 'Afficher les panneaux' : 'Plein écran'; };
@@ -149,6 +156,7 @@ function renderFaults() {
 // Dégivrage mis en scène : Rayon X allumé le temps de la démo, projecteur sur la vanne puis l’échangeur
 let defX = null;
 function defrost() {
+  setView('coupe');
   if (S.mode !== 'heat') setMode('heat');
   S.power = true; S.fault = null; clearTimeout(defT);
   if (defX === null) defX = S.xray;
@@ -255,7 +263,7 @@ function tourGo(i) {
 }
 function closeDock() { ti = -1; quiz.on = false; quiz.find = null; S.quizfind = false; C.spot(null); C.refresh(); dock(false); endQuiz(); }
 const stopDef = () => { S.def = null; endDef(); };
-$('#bT').onclick = () => { stopDef(); endQuiz(); dock(true); tourGo(0); };
+$('#bT').onclick = () => { stopDef(); endQuiz(); setView('coupe'); dock(true); tourGo(0); };
 $('#dockClose').onclick = closeDock;
 $('#dockPrev').onclick = () => { if (!quiz.on && ti > 0) tourGo(ti - 1); };
 $('#dockNext').onclick = () => { if (quiz.on) return quizNext(); if (ti < TOUR.length - 1) tourGo(ti + 1); else closeDock(); };
@@ -335,12 +343,13 @@ const starRow = n => [0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}">★</i>
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 const quiz = { on: false, lv: 0, i: 0, base: 0, bonus: 0, streak: 0, bestStreak: 0, help: 2, done: false, find: null, tries: 0, helped: false, missed: [], ord: null, snap: null, cfg: '' };
-const SNAP = ['sys', 'types', 'mode', 'xray', 'labels', 'zoning', 'zones', 'drain', 'support', 'diff', 'power', 'fault'];
+const SNAP = ['view', 'reprise', 'sys', 'types', 'mode', 'xray', 'labels', 'zoning', 'zones', 'drain', 'support', 'diff', 'power', 'fault'];
 const cur = () => LEVELS[quiz.lv].q[quiz.i];
 
 function over(html) { const o = $('#qover'); o.innerHTML = html; o.hidden = !html; }
 function applySet(set) {
   set = set || {};
+  if (S.view !== 'coupe') { S.view = 'coupe'; quiz.cfg = ''; }
   const c = { sys: 'mono', types: 'mural', xray: false, zoning: true, drain: 'gravite', fault: null, mode: 'cool', ...set };
   setMode(c.mode);
   S.labels = false; S.power = true; S.fault = c.fault; S.xray = c.xray;

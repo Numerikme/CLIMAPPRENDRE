@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>La clim, comment ça marche — schéma interactif</title>
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 <header class="top">
@@ -14,6 +14,7 @@
     <button data-mode="heat"><b>Chaud</b><small>hiver · −2 °C dehors</small></button>
   </div>
   <div class="tools">
+    <button id="bP" class="tg" title="Plan d’une maison équipée d’un gainable, vue de dessus">Focus gainable</button>
     <button id="bX" class="tg" title="Voir à l'intérieur des appareils">Rayon X</button>
     <button id="bL" class="tg" title="Afficher le nom des éléments">Étiquettes</button>
     <button id="bT">Visite guidée</button>
@@ -24,7 +25,7 @@
 
 <div class="app">
   <aside class="left">
-    <section>
+    <section class="cp">
       <h2>Système</h2>
       <div class="seg col" data-set="sys">
         <button data-val="mono" class="on">Mono-split<small>1 groupe, 1 unité intérieure</small></button>
@@ -32,7 +33,7 @@
         <button data-val="vrf">VRF / DRV<small>1 réseau commun pour tout un bâtiment</small></button>
       </div>
     </section>
-    <section>
+    <section class="cp">
       <h2>Unité intérieure</h2>
       <div class="pick" id="selWrap" hidden><label for="sel">Appliquer à</label><select id="sel"></select></div>
       <div class="seg grid" data-set="type">
@@ -53,16 +54,20 @@
         <button data-val="1" class="on">Zoning</button>
         <button data-val="0">Sans zoning</button>
       </div>
+      <div class="seg" data-set="reprise" id="segRep">
+        <button data-val="couloir" class="on">Reprise couloir</button>
+        <button data-val="pieces">Reprise par pièce</button>
+      </div>
       <p class="hint" id="zoneHint">Cliquez sur un thermostat pour fermer ou ouvrir sa zone.</p>
     </section>
-    <section>
+    <section class="cp">
       <h2>Support du groupe</h2>
       <div class="seg" data-set="support">
         <button data-val="mural" class="on">Mural</button>
         <button data-val="sol">Au sol</button>
       </div>
     </section>
-    <section>
+    <section class="cp">
       <h2>Condensats</h2>
       <div class="seg col" data-set="drain">
         <button data-val="gravite" class="on">Écoulement par gravité</button>
@@ -118,7 +123,7 @@
   </aside>
 </div>
 
-<script src="scene.js?v=6"></script>
-<script src="ui.js?v=6"></script>
+<script src="scene.js?v=10"></script>
+<script src="ui.js?v=10"></script>
 </body>
 </html>

@@ -334,3 +334,13 @@ stop{transition:stop-color 1.2s ease}
 
 /* en mode « trouver », la goulotte transparente ne bloque pas le clic sur ce qu’elle contient */
 .quizfind.xray .gou,.quizfind.xray [data-info=goulotte]{pointer-events:none}
+
+/* ============ Focus gainable (vue de dessus) ============ */
+.planview .left section.cp{display:none}
+#scene .pname{font-size:19px;font-weight:700;fill:#2d3740}
+#scene .pname.small{font-size:14px;font-weight:600;fill:#6a6152}
+#scene .pq{font-size:15px;font-weight:600;fill:#1c6fd1;font-variant-numeric:tabular-nums}
+#scene.heat .pq{fill:#c4471f}
+#scene .pq.off{fill:#8b8f93}
+#scene .ptitle{font-size:20px;font-weight:700;fill:#1d2831}
+.lab .ptitle{display:none}
