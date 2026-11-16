@@ -481,8 +481,16 @@ function drawLinks(o) {
 }
 function drawDrain(u, k, yq) {
   const g = el('g', { 'data-info': 'condensats' }, layers.pipes), r = u.room;
-  const pump = u.inPlenum || S.drain !== 'gravite';
-  if (!pump) {
+  // cassette : pompe intégrée d'origine ; gainable : pompe seulement si on la choisit
+  const pump = u.type === 'cassette' || S.drain !== 'gravite';
+  if (!pump && u.inPlenum) {
+    // gainable en gravitaire : évacuation en pente dans le faux plafond puis descente le long du mur
+    const by = Math.min(u.port.y + 16, u.y + u.h - 3), vx = u.port.x - 35;
+    const d = P([[u.port.x + 6, by], [vx, by + 3], [vx, yq], [515, yq + 8], [515, G - 50]]);
+    el('path', { d, class: 'drain', style: 'stroke-width:2.6' }, g); el('path', { d, class: 'drops' }, g);
+    el('circle', { cx: 515, cy: G - 46, r: 2.6, fill: '#2f8fe6', class: 'drip' }, g);
+    if (k === 0) hs('condensats', 515, G - 90, 548, G - 88, false, 50);
+  } else if (!pump) {
     const d = P([[u.dr.x, u.dr.y], [u.dr.x + 46, u.dr.y + 8]]);
     el('path', { d, class: 'drain' }, g); el('path', { d, class: 'drops' }, g);
     R(u.dr.x + 44, u.dr.y + 2, 9, 34, { rx: 2, fill: '#aeb8c0', stroke: '#7d8891' }, g);
