@@ -317,6 +317,12 @@ function drawUnit(u, k) {
 }
 
 /* ---------- Groupe extérieur ---------- */
+// plaque du logo CODEP posée sur la carrosserie
+function plaque(g, x, y, w) {
+  const h = w * 144 / 424;
+  R(x - 2, y - 2, w + 4, h + 4, { rx: 4, fill: '#0b0d0f' }, g);
+  el('image', { href: 'logo-codep-plaque.png', x, y, width: w, height: h, preserveAspectRatio: 'xMidYMid meet' }, g);
+}
 function drawOutdoor() {
   const vrf = L.vrf, so = S.sys === 'mono' ? 1.15 : S.sys === 'multi' ? 1.25 : 1.3;
   const sup = vrf ? 'sol' : S.support, W = 260 * so, H = 176 * so;
@@ -370,6 +376,7 @@ function drawOutdoor() {
     for (let i = 0; i < 15; i++) R(12, 16 + i * 10, 112, 4, { fill: '#c9cfd3' }, cs);
     R(138, 14, 108, 150, { rx: 3, fill: '#e3e6e4', stroke: '#b2b9be' }, cs);
     R(20, -36, 220, 26, { rx: 4, fill: '#39434c' }, cs);
+    plaque(cs, 146, 62, 92);
   } else {
     R(0, 0, 260, 176, { rx: 8, fill: 'url(#gMetal)', stroke: '#8d969e', 'stroke-width': 1.3 }, cs);
     el('line', { x1: 134, y1: 0, x2: 134, y2: 176, stroke: '#c4cacf' }, cs);
@@ -377,6 +384,7 @@ function drawOutdoor() {
     for (let i = 0; i < 5; i++) R(150, 120 + i * 8, 92, 3, { fill: '#cdd3d6' }, cs);
     el('circle', { cx: 67, cy: 89, r: 58, fill: '#c9cfd2' }, cs); el('circle', { cx: 67, cy: 89, r: 55, fill: 'url(#gFan)' }, cs);
     [[8, 8], [252, 8], [8, 168], [252, 168]].forEach(([a, b]) => el('circle', { cx: a, cy: b, r: 2.2, fill: '#9aa3ab' }, cs));
+    plaque(cs, 150, 62, 92);
   }
   const fg = el('g', { class: 'fanb', 'data-info': 'ventilo' }, g);
   if (vrf) {
@@ -722,6 +730,7 @@ function planNetwork() {
   R(E.x, E.y, E.w, E.h, { rx: 4, fill: 'url(#gMetal)', stroke: '#6f7981', 'stroke-width': 1.5 }, og);
   for (let i = 1; i < 12; i++) el('line', { x1: E.x + i * 10, y1: E.y + 6, x2: E.x + i * 10, y2: E.y + E.h - 6, stroke: '#c4cacf' }, og);
   R(E.x + 8, E.y - 6, E.w - 16, 6, { fill: '#8f8a80' }, og);
+  plaque(og, E.x + E.w - 66, E.y + 8, 56);
   [-30, 0, 30].forEach((o, i) => air(`M${E.x + E.w / 2 + o} ${E.y + E.h + 8} C${E.x + E.w / 2 + o} ${E.y + E.h + 30} ${E.x + E.w / 2 + o * 1.6} ${E.y + E.h + 44} ${E.x + E.w / 2 + o * 2.2} ${E.y + E.h + 70}`, 'oair', 4 + (i % 2)));
   el('text', { x: E.x - 10, y: E.y + 30, 'text-anchor': 'end', class: 'pname small', text: 'Groupe extérieur' }, layers.over);
   // ---- reprise filtrante, à l’arrière du gainable

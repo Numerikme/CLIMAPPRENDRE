@@ -348,3 +348,6 @@ stop{transition:stop-color 1.2s ease}
 #scene .pq.warn{fill:#c43c2c}
 #scene .pdiam{font-size:13px;font-weight:700;fill:#39434c}
 #scene .pdiam.warn{fill:#fff}
+
+/* Logo CODEP */
+.top .logo{height:42px;width:auto;border-radius:6px;flex:none;display:block}
