@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Icône CLIMAPPRENDRE aux couleurs CODEP : un « C » mi-froid (bleu) mi-chaud (rouge), et l’éclair -->
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2bb3e6"/><stop offset="1" stop-color="#0587ae"/></linearGradient>
+    <linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ee3a3f"/><stop offset="1" stop-color="#b81f24"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#111518"/>
+  <path d="M47 18.5 A19.5 19.5 0 0 0 12.5 32" fill="none" stroke="url(#b)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M12.5 32 A19.5 19.5 0 0 0 47 45.5" fill="none" stroke="url(#r)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M35 19.5 L26 34 H32.5 L29.5 45 L39.5 29.5 H33 Z" fill="#fff"/>
+</svg>

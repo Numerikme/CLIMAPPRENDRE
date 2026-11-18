@@ -350,4 +350,52 @@ stop{transition:stop-color 1.2s ease}
 #scene .pdiam.warn{fill:#fff}
 
 /* Logo CODEP */
-.top .logo{height:42px;width:auto;border-radius:6px;flex:none;display:block}
+.top .logo{height:40px;width:auto;flex:none;display:block}
+
+/* ============ Téléphone et tablette en portrait (l'affichage ordinateur n'est pas touché) ============ */
+@media (max-width:900px){
+  html,body{height:auto}
+  body{display:block;overflow-x:hidden;overflow-y:auto}
+  .top{flex-wrap:wrap;gap:8px 10px;padding:8px 12px}
+  .top .logo{height:30px}
+  .brand strong{font-size:16px;white-space:normal}
+  .brand span{display:none}
+  .modes{order:3;flex:1 1 100%;margin:0}
+  .modes button{flex:1;min-width:0;padding:5px 8px}
+  .modes b{font-size:16px}
+  .tools{order:4;flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:2px;scrollbar-width:none}
+  .tools::-webkit-scrollbar{display:none}
+  .tools button{flex:none;padding:7px 10px;font-size:14px}
+  #bF{display:none}
+  .app{display:flex;flex-direction:column}
+  .stage{order:1;flex:none;display:flex;flex-direction:column;overflow:visible}
+  #scene,.stage.docked #scene{flex:none;height:min(72vw,82vh);overflow:hidden}
+  .legend{top:8px;bottom:auto;left:8px;font-size:11px;padding:6px 8px}
+  .status{font-size:13px;max-width:94%;top:8px}
+  .dock{position:static;margin:8px;flex-wrap:wrap;gap:10px;padding:12px;animation:none}
+  .dock-step{font-size:20px;min-width:0}
+  .dock-body{flex:1 1 100%;order:2}
+  .dock-step{order:1}
+  .dock-nav{order:3;flex-direction:row;flex-wrap:wrap;width:100%}
+  .dock-nav button{flex:1}
+  .dock-body h3{font-size:18px}
+  .dock-body p{font-size:15px}
+  .dock-answers button{font-size:15px;flex:1 1 100%}
+  .qover{position:fixed;z-index:50;padding:12px}
+  .qcard{padding:16px}
+  .qtop{flex-direction:column;gap:8px}
+  .qtop h3{font-size:22px}
+  .qrank{margin-left:0;text-align:left}
+  .qlevels{grid-template-columns:1fr}
+  .qlv{min-height:0}
+  .qbar{flex-wrap:wrap}
+  .qnums{flex-wrap:wrap}
+  .qnums div{min-width:0;flex:1}
+  .qbig{font-size:48px}
+  .left{order:2;width:auto;border-right:0;border-top:1px solid var(--line);overflow:visible;display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  .left section{min-width:0}
+  .right{order:3;width:auto;border-left:0;border-top:1px solid var(--line);overflow:visible}
+}
+@media (max-width:520px){
+  .left{grid-template-columns:1fr}
+}

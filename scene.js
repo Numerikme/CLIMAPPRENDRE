@@ -319,9 +319,7 @@ function drawUnit(u, k) {
 /* ---------- Groupe extérieur ---------- */
 // plaque du logo CODEP posée sur la carrosserie
 function plaque(g, x, y, w) {
-  const h = w * 144 / 424;
-  R(x - 2, y - 2, w + 4, h + 4, { rx: 4, fill: '#0b0d0f' }, g);
-  el('image', { href: 'logo-codep-plaque.png', x, y, width: w, height: h, preserveAspectRatio: 'xMidYMid meet' }, g);
+  el('image', { href: 'logo-codep.png', x, y, width: w, height: w * 129 / 420, preserveAspectRatio: 'xMidYMid meet' }, g);
 }
 function drawOutdoor() {
   const vrf = L.vrf, so = S.sys === 'mono' ? 1.15 : S.sys === 'multi' ? 1.25 : 1.3;
